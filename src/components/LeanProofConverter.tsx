@@ -110,7 +110,7 @@ Format the response as valid Lean 4 syntax with proper theorem statements, defin
             <Sparkles className="h-8 w-8 text-primary" />
           </div>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Transform your informal mathematical statements into formal Lean 4 proofs with the power of AI
+            Transform your informal mathematical statements into formal Lean 4 proofs with the power of AI. Made with ❤️ by Romir Patel.
           </p>
         </div>
 
