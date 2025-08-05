@@ -81,8 +81,8 @@ Format the response as valid Lean 4 syntax with proper theorem statements, defin
   };
 
   return (
-    <div className="min-h-screen vintage-paper flex items-center justify-center p-6">
-      <div className="w-full max-w-4xl space-y-8">
+    <div className="min-h-screen vintage-paper p-6">
+      <div className="w-full max-w-4xl mx-auto space-y-8 pt-8">
         {/* Header */}
         <div className="text-center space-y-4">
           <div className="flex items-center justify-center gap-3 mb-4">
