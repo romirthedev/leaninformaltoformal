@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Loader2, BookOpen, Sparkles } from "lucide-react";
+import { Loader2, BookOpen, Sparkles, Copy } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 const GEMINI_API_KEY = "AIzaSyDJzAJF422SyZ99Z6CGihnJqKIDlQn4CfM";
@@ -80,6 +80,25 @@ Format the response as valid Lean 4 syntax with proper theorem statements, defin
     }
   };
 
+  const copyToClipboard = async () => {
+    if (!output) return;
+    
+    try {
+      await navigator.clipboard.writeText(output);
+      toast({
+        title: "Copied to clipboard!",
+        description: "The Lean proof has been copied to your clipboard.",
+      });
+    } catch (error) {
+      console.error("Failed to copy to clipboard:", error);
+      toast({
+        title: "Copy failed",
+        description: "Failed to copy to clipboard. Please try selecting and copying manually.",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <div className="min-h-screen vintage-paper p-6">
       <div className="w-full max-w-4xl mx-auto space-y-8 pt-8">
@@ -140,9 +159,22 @@ Example: 'The sum of two even numbers is even'"
           {/* Output Section */}
           <Card className="elegant-shadow vintage-border">
             <CardHeader>
-              <CardTitle className="text-xl text-foreground flex items-center gap-2">
-                <Sparkles className="h-5 w-5" />
-                Lean 4 Proof
+              <CardTitle className="text-xl text-foreground flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="h-5 w-5" />
+                  Lean 4 Proof
+                </div>
+                {output && (
+                  <Button
+                    onClick={copyToClipboard}
+                    variant="outline"
+                    size="sm"
+                    className="ml-2"
+                  >
+                    <Copy className="h-4 w-4" />
+                    Copy
+                  </Button>
+                )}
               </CardTitle>
             </CardHeader>
             <CardContent>

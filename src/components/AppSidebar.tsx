@@ -44,7 +44,7 @@ export function AppSidebar() {
             <BookOpen className="h-6 w-6 text-sidebar-primary" />
             {!isCollapsed && (
               <h2 className="font-bold text-lg text-sidebar-foreground">
-                Lean Proof
+                LITF
               </h2>
             )}
           </div>
