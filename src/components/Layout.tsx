@@ -17,7 +17,7 @@ export default function Layout({ children }: LayoutProps) {
             <SidebarTrigger className="text-foreground hover:bg-accent/50" />
             <div className="ml-4 flex items-center gap-2">
               <h1 className="text-lg font-semibold text-foreground">
-                Lean Proof Converter
+                Lean - Informal to Formal
               </h1>
             </div>
           </header>
