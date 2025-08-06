@@ -6,6 +6,8 @@ import io
 from pathlib import Path
 from typing import List, Dict, Any
 
+import matplotlib
+matplotlib.use('Agg')  # Use non-interactive backend
 import matplotlib.pyplot as plt
 import matplotlib.axes
 import numpy as np
