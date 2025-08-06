@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Loader2, BarChart3, AlertCircle } from "lucide-react";
+import { Loader2, BarChart3, AlertCircle, Wifi, WifiOff } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { generateFrontendVisualization } from "@/lib/visualization";
 
 interface VisualizationProps {
   informalStatement: string;
@@ -14,6 +15,7 @@ export const EmbeddingVisualization = ({ informalStatement, leanCode, isVisible 
   const [isGenerating, setIsGenerating] = useState(false);
   const [plotImage, setPlotImage] = useState<string>("");
   const [plotFormat, setPlotFormat] = useState<'png' | 'svg'>('png');
+  const [isOfflineMode, setIsOfflineMode] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
   const { toast } = useToast();
 
@@ -43,38 +45,61 @@ export const EmbeddingVisualization = ({ informalStatement, leanCode, isVisible 
       
       const leanCodes = [leanCode, ...variations.filter(code => code !== leanCode)];
 
-      // Use appropriate API endpoint
-      const apiUrl = process.env.NODE_ENV === 'production' 
-        ? '/api/visualize' 
-        : 'http://localhost:3001/api/visualize'; // Local development server
+      // Try API first, fallback to frontend generation
+      let visualizationSuccessful = false;
+      
+      if (!isOfflineMode) {
+        try {
+          // Use appropriate API endpoint
+          const apiUrl = process.env.NODE_ENV === 'production' 
+            ? '/api/visualize' 
+            : 'http://localhost:3001/api/visualize'; // Local development server
 
-      const response = await fetch(apiUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          informal_statement: informalStatement,
-          lean_codes: leanCodes
-        }),
-      });
+          const response = await fetch(apiUrl, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              informal_statement: informalStatement,
+              lean_codes: leanCodes
+            }),
+          });
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || `API request failed: ${response.status}`);
+          if (!response.ok) {
+            throw new Error(`API request failed: ${response.status}`);
+          }
+
+          const data = await response.json();
+          
+          if (data.plot) {
+            setPlotImage(data.plot);
+            setPlotFormat(data.format || 'svg');
+            visualizationSuccessful = true;
+            toast({
+              title: "API Visualization Generated! 🚀",
+              description: data.message || "Server-side visualization created successfully.",
+            });
+          } else {
+            throw new Error(data.error || "Failed to generate API visualization");
+          }
+        } catch (apiError) {
+          console.log("API failed, falling back to frontend generation:", apiError);
+          setIsOfflineMode(true);
+        }
       }
 
-      const data = await response.json();
-      
-      if (data.plot) {
-        setPlotImage(data.plot);
-        setPlotFormat(data.format || 'png');
+      // Frontend fallback generation
+      if (!visualizationSuccessful) {
+        const frontendResult = generateFrontendVisualization(informalStatement, leanCodes);
+        const svgBase64 = btoa(frontendResult.svg);
+        
+        setPlotImage(svgBase64);
+        setPlotFormat('svg');
         toast({
-          title: "Visualization generated!",
-          description: data.message || "The embedding visualization has been created successfully.",
+          title: `${isOfflineMode ? 'Offline' : 'Frontend'} Visualization Generated! 📊`,
+          description: frontendResult.message + " (Client-side rendering)",
         });
-      } else {
-        throw new Error(data.error || "Failed to generate visualization");
       }
     } catch (error) {
       console.error("Error generating visualization:", error);
@@ -103,29 +128,63 @@ export const EmbeddingVisualization = ({ informalStatement, leanCode, isVisible 
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <p className="text-sm text-muted-foreground">
-          Generate a visualization showing how different Lean formalizations cluster in embedding space.
-          This helps understand the semantic relationships between different proof approaches.
-        </p>
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-muted-foreground">
+            Generate a visualization showing how different Lean formalizations cluster in embedding space.
+            This helps understand the semantic relationships between different proof approaches.
+          </p>
+          <div className="flex items-center gap-2 text-sm">
+            {isOfflineMode ? (
+              <>
+                <WifiOff className="h-4 w-4 text-orange-500" />
+                <span className="text-orange-600">Frontend Mode</span>
+              </>
+            ) : (
+              <>
+                <Wifi className="h-4 w-4 text-green-500" />
+                <span className="text-green-600">API Mode</span>
+              </>
+            )}
+          </div>
+        </div>
         
-        <Button
-          onClick={generateVisualization}
-          disabled={isGenerating || !informalStatement || !leanCode}
-          variant="outline"
-          className="w-full"
-        >
-          {isGenerating ? (
-            <>
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Generating Visualization...
-            </>
-          ) : (
-            <>
-              <BarChart3 className="h-4 w-4" />
-              Generate Embedding Plot
-            </>
-          )}
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            onClick={generateVisualization}
+            disabled={isGenerating || !informalStatement || !leanCode}
+            variant="outline"
+            className="flex-1"
+          >
+            {isGenerating ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Generating Visualization...
+              </>
+            ) : (
+              <>
+                <BarChart3 className="h-4 w-4" />
+                Generate Embedding Plot
+              </>
+            )}
+          </Button>
+          
+          <Button
+            onClick={() => {
+              setIsOfflineMode(!isOfflineMode);
+              toast({
+                title: `Switched to ${!isOfflineMode ? 'Frontend' : 'API'} Mode`,
+                description: !isOfflineMode 
+                  ? "Will use client-side visualization generation" 
+                  : "Will try server API first, then fallback to frontend",
+              });
+            }}
+            variant="ghost"
+            size="icon"
+            className="shrink-0"
+          >
+            {isOfflineMode ? <WifiOff className="h-4 w-4" /> : <Wifi className="h-4 w-4" />}
+          </Button>
+        </div>
 
         {error && (
           <div className="flex items-center gap-2 p-3 bg-destructive/10 border border-destructive/20 rounded-md">
@@ -155,7 +214,8 @@ export const EmbeddingVisualization = ({ informalStatement, leanCode, isVisible 
             </div>
             <p className="text-xs text-muted-foreground">
               The visualization shows how different Lean formalizations cluster together based on their 
-              semantic similarity. Connected points represent related formalization approaches.
+              characteristics. Connected points represent related formalization approaches.
+              {isOfflineMode && " (Generated client-side without server dependencies)"}
             </p>
           </div>
         )}
