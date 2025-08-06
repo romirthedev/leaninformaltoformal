@@ -1,94 +1,77 @@
 # Vercel Deployment Guide
 
-This project includes a lightweight serverless function for generating embedding visualizations that works with Vercel's free tier.
+This project uses a **complete frontend-only approach** for generating embedding visualizations, making it perfect for Vercel's free tier.
 
 ## Local Development
 
-1. **Start the development API server:**
-   ```bash
-   npm run dev:api
-   ```
+Simply start the development server:
+```bash
+npm run dev
+```
 
-2. **Start the frontend in a separate terminal:**
-   ```bash
-   npm run dev
-   ```
-
-3. **Or start both together:**
-   ```bash
-   npm run dev:full
-   ```
+The visualization feature works entirely in the browser with no backend required.
 
 ## Vercel Deployment
 
 ### Prerequisites
-- Install Vercel CLI: `npm install -g vercel`
+- Install Vercel CLI: `npm install -g vercel` (optional)
 - Have a Vercel account (free)
 
 ### Deploy Steps
 
-1. **Login to Vercel:**
+1. **Via GitHub (Recommended):**
+   - Connect your GitHub repository to Vercel
+   - Automatic deployments on every push
+   - No additional configuration needed
+
+2. **Via CLI:**
    ```bash
    vercel login
-   ```
-
-2. **Deploy the project:**
-   ```bash
    vercel
    ```
-   
-   Follow the prompts to:
-   - Link to your Vercel account
-   - Set up the project name
-   - Configure build settings (Vercel will auto-detect Vite)
 
-3. **The serverless function is automatically deployed:**
-   - Location: `/api/visualize.js`
-   - Endpoint: `https://your-project.vercel.app/api/visualize`
+3. **Configuration:**
+   - Vercel auto-detects Vite configuration
+   - No serverless functions needed
+   - Static site deployment
 
-### Configuration
+### Free Tier Benefits
 
-The project includes:
-- `vercel.json`: Vercel configuration with CORS headers and function settings
-- `/api/visualize.js`: Serverless function for embedding visualization
-- Frontend automatically uses production API endpoint when deployed
-
-### Free Tier Considerations
-
-This implementation is designed for Vercel's free tier:
-- ✅ No heavy ML libraries (scikit-learn, tensorflow, etc.)
-- ✅ Lightweight SVG generation instead of matplotlib
-- ✅ Fast cold start times
-- ✅ Small bundle size
-- ✅ Simple clustering algorithms
-- ✅ No external dependencies beyond Node.js builtins
+This implementation is **optimized for Vercel's free tier**:
+- ✅ **Zero backend dependencies** - Pure client-side application
+- ✅ **No API calls** - Everything runs in the browser
+- ✅ **Fast builds** - Lightweight with minimal dependencies
+- ✅ **Instant loading** - No cold start times
+- ✅ **No usage limits** - Frontend-only means no function execution limits
+- ✅ **Always available** - No server downtime concerns
 
 ### Features
 
-- **SVG-based visualization** - Lightweight and scalable
-- **Simple clustering** - Rule-based clustering without ML dependencies  
-- **Interactive visualization** - Shows relationships between Lean formalizations
-- **Fast response times** - Optimized for serverless environment
+- **Frontend Visualization Engine** - Complete client-side SVG generation
+- **Smart Clustering** - Rule-based analysis of Lean code patterns
+- **Interactive UI** - Real-time visualization without server delays
+- **Responsive Design** - Works on all devices
+- **Zero Configuration** - Deploy and run immediately
 
-### API Usage
+### How It Works
 
-```bash
-curl -X POST https://your-project.vercel.app/api/visualize \
-  -H "Content-Type: application/json" \
-  -d '{
-    "informal_statement": "The sum of two even numbers is even",
-    "lean_codes": [
-      "theorem sum_even : ∀ a b : ℕ, Even a → Even b → Even (a + b) := by sorry",
-      "lemma sum_even_alt : ∀ x y : ℕ, Even x → Even y → Even (x + y) := by simp"
-    ]
-  }'
+1. **User Input**: Informal statement and generated Lean code
+2. **Code Analysis**: Client-side parsing and pattern recognition
+3. **Clustering**: Rule-based grouping (theorems, lemmas, definitions, etc.)
+4. **Visualization**: SVG generation with positioning algorithms
+5. **Display**: Interactive visualization with cluster information
+
+### Technical Architecture
+
+```
+Browser → Frontend Logic → SVG Generation → Display
+    ↓
+No server calls, no APIs, no external dependencies
 ```
 
-Returns:
-```json
-{
-  "plot": "base64_encoded_svg",
-  "format": "svg", 
-  "message": "Generated visualization for 2 formalizations"
-}
-```
+### Deployment URL
+
+Once deployed, your app will be available at:
+`https://your-project-name.vercel.app`
+
+The visualization feature works immediately with no additional setup required.

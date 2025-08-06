@@ -23,56 +23,9 @@ dist-ssr
 *.sln
 *.sw?
 
-# Python
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
-.Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
-
-# Virtual environments
-backend/venv/
-backend/env/
-.env
-.venv
-env/
-venv/
-ENV/
-env.bak/
-venv.bak/
-
-# ML models cache
-backend/.cache/
-backend/models/
-
-# Generated plots
+# Generated plots and test files
 *.png
 *.jpg
 *.jpeg
-
-# Test files
-test-*.js
-test-*.cjs
 test-output.*
 temp-*
-dev-api-server.js
-
-# Deployment files (keep only the main ones)
-Procfile
-railway.sh
-requirements.txt
