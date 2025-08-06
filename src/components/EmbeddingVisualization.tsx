@@ -44,7 +44,28 @@ export const EmbeddingVisualization = ({ informalStatement, leanCode, isVisible 
 
       // Generate frontend visualization
       const frontendResult = generateFrontendVisualization(informalStatement, leanCodes);
-      const svgBase64 = btoa(frontendResult.svg);
+      
+      // Safe encoding for SVG - handle Unicode characters properly
+      let svgBase64: string;
+      try {
+        // Method 1: Full Unicode support
+        svgBase64 = btoa(unescape(encodeURIComponent(frontendResult.svg)));
+      } catch (encodingError) {
+        try {
+          // Method 2: Use TextEncoder for better Unicode handling
+          const encoder = new TextEncoder();
+          const bytes = encoder.encode(frontendResult.svg);
+          svgBase64 = btoa(String.fromCharCode(...bytes));
+        } catch (fallback1Error) {
+          try {
+            // Method 3: Strip all non-ASCII characters and use simple btoa
+            const cleanSvg = frontendResult.svg.replace(/[^\x00-\x7F]/g, "");
+            svgBase64 = btoa(cleanSvg);
+          } catch (finalError) {
+            throw new Error("Unable to encode SVG: " + finalError.message);
+          }
+        }
+      }
       
       setPlotImage(svgBase64);
       toast({
@@ -117,7 +138,25 @@ export const EmbeddingVisualization = ({ informalStatement, leanCode, isVisible 
               <div 
                 className="w-full"
                 dangerouslySetInnerHTML={{ 
-                  __html: atob(plotImage) 
+                  __html: (() => {
+                    try {
+                      return decodeURIComponent(escape(atob(plotImage)));
+                    } catch (err) {
+                      try {
+                        // Fallback 1: Simple atob
+                        return atob(plotImage);
+                      } catch (fallback1Error) {
+                        try {
+                          // Fallback 2: TextDecoder approach
+                          const bytes = atob(plotImage).split('').map(c => c.charCodeAt(0));
+                          const decoder = new TextDecoder();
+                          return decoder.decode(new Uint8Array(bytes));
+                        } catch (finalError) {
+                          return `<div style="padding: 20px; color: red;">Error decoding SVG: ${finalError.message}</div>`;
+                        }
+                      }
+                    }
+                  })()
                 }}
               />
             </div>

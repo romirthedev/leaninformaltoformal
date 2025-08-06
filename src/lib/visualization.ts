@@ -1,14 +1,263 @@
 // Frontend-only visualization utilities
-// Generates simple SVG visualizations without backend dependencies
+// Replicates Python matplotlib/sklearn visualization with t-SNE and K-means clustering
 
 export interface VisualizationData {
   svg: string;
   message: string;
 }
 
-// Simple hash function for deterministic positioning
+export interface Formalization {
+  lean_code: string;
+  embedding: number[];
+  informal: string;
+}
+
+const PERPLEXITY = 30;
+
+// Simple K-means implementation
+class SimpleKMeans {
+  private k: number;
+  private maxIterations: number;
+  private centroids: number[][];
+  private labels: number[];
+
+  constructor(k: number, maxIterations: number = 100) {
+    this.k = k;
+    this.maxIterations = maxIterations;
+    this.centroids = [];
+    this.labels = [];
+  }
+
+  fit(data: number[][]): { centroids: number[][], labels: number[] } {
+    const n = data.length;
+    const dims = data[0].length;
+
+    // Initialize centroids randomly
+    this.centroids = [];
+    for (let i = 0; i < this.k; i++) {
+      const centroid = [];
+      for (let j = 0; j < dims; j++) {
+        // Initialize with random data point values
+        const randomIdx = Math.floor(Math.random() * n);
+        centroid.push(data[randomIdx][j] + (Math.random() - 0.5) * 0.1);
+      }
+      this.centroids.push(centroid);
+    }
+
+    // K-means iterations
+    for (let iter = 0; iter < this.maxIterations; iter++) {
+      // Assign points to clusters
+      this.labels = data.map(point => this.assignToCluster(point));
+
+      // Update centroids
+      const newCentroids = this.updateCentroids(data);
+      
+      // Check for convergence
+      if (this.centroidsEqual(this.centroids, newCentroids)) {
+        break;
+      }
+      
+      this.centroids = newCentroids;
+    }
+
+    return { centroids: this.centroids, labels: this.labels };
+  }
+
+  private assignToCluster(point: number[]): number {
+    let minDistance = Infinity;
+    let closestCluster = 0;
+
+    for (let i = 0; i < this.k; i++) {
+      const distance = this.euclideanDistance(point, this.centroids[i]);
+      if (distance < minDistance) {
+        minDistance = distance;
+        closestCluster = i;
+      }
+    }
+
+    return closestCluster;
+  }
+
+  private updateCentroids(data: number[][]): number[][] {
+    const newCentroids: number[][] = [];
+    const dims = data[0].length;
+
+    for (let i = 0; i < this.k; i++) {
+      const clusterPoints = data.filter((_, idx) => this.labels[idx] === i);
+      
+      if (clusterPoints.length === 0) {
+        // Keep old centroid if no points assigned
+        newCentroids.push([...this.centroids[i]]);
+      } else {
+        const centroid = new Array(dims).fill(0);
+        for (const point of clusterPoints) {
+          for (let j = 0; j < dims; j++) {
+            centroid[j] += point[j];
+          }
+        }
+        for (let j = 0; j < dims; j++) {
+          centroid[j] /= clusterPoints.length;
+        }
+        newCentroids.push(centroid);
+      }
+    }
+
+    return newCentroids;
+  }
+
+  private euclideanDistance(a: number[], b: number[]): number {
+    let sum = 0;
+    for (let i = 0; i < a.length; i++) {
+      sum += (a[i] - b[i]) ** 2;
+    }
+    return Math.sqrt(sum);
+  }
+
+  private centroidsEqual(a: number[][], b: number[][]): boolean {
+    const threshold = 1e-6;
+    for (let i = 0; i < a.length; i++) {
+      for (let j = 0; j < a[i].length; j++) {
+        if (Math.abs(a[i][j] - b[i][j]) > threshold) {
+          return false;
+        }
+      }
+    }
+    return true;
+  }
+}
+
+// Simple t-SNE implementation for 2D visualization
+class SimpleTSNE {
+  private perplexity: number;
+  private learningRate: number;
+  private maxIter: number;
+
+  constructor(perplexity = 30, learningRate = 200, maxIter = 300) {
+    this.perplexity = Math.min(perplexity, 30); // Cap perplexity
+    this.learningRate = learningRate;
+    this.maxIter = maxIter;
+  }
+
+  fit(data: number[][]): number[][] {
+    const n = data.length;
+    if (n < 4) {
+      // For very small datasets, use PCA-like projection
+      return this.simplePCA(data);
+    }
+
+    // Initialize with random positions
+    const Y = Array(n).fill(0).map(() => [
+      (Math.random() - 0.5) * 20,
+      (Math.random() - 0.5) * 20
+    ]);
+
+    // Simplified t-SNE: just use euclidean distances and basic gradient descent
+    for (let iter = 0; iter < Math.min(this.maxIter, 100); iter++) {
+      this.updatePositions(data, Y);
+    }
+
+    return Y;
+  }
+
+  private simplePCA(data: number[][]): number[][] {
+    if (data.length === 0) return [];
+    
+    // Simple 2D projection based on variance
+    const dims = data[0].length;
+    const result: number[][] = [];
+    
+    for (let i = 0; i < data.length; i++) {
+      const x = data[i].reduce((sum, val, idx) => sum + val * (idx % 2 === 0 ? 1 : -1), 0) / dims;
+      const y = data[i].reduce((sum, val, idx) => sum + val * (idx % 3 === 0 ? 1 : -1), 0) / dims;
+      result.push([x * 10, y * 10]);
+    }
+    return result;
+  }
+
+  private updatePositions(data: number[][], Y: number[][]): void {
+    const n = data.length;
+    const grad = Array(n).fill(0).map(() => [0, 0]);
+
+    for (let i = 0; i < n; i++) {
+      for (let j = i + 1; j < n; j++) {
+        // Compute high-dimensional distance
+        const hdDist = this.euclideanDistance(data[i], data[j]);
+        // Compute low-dimensional distance
+        const ldDist = this.euclideanDistance(Y[i], Y[j]);
+        
+        if (ldDist > 0) {
+          const force = (hdDist - ldDist) / ldDist;
+          const dx = Y[j][0] - Y[i][0];
+          const dy = Y[j][1] - Y[i][1];
+          
+          grad[i][0] += force * dx * 0.1;
+          grad[i][1] += force * dy * 0.1;
+          grad[j][0] -= force * dx * 0.1;
+          grad[j][1] -= force * dy * 0.1;
+        }
+      }
+    }
+
+    // Update positions
+    for (let i = 0; i < n; i++) {
+      Y[i][0] += grad[i][0] * this.learningRate * 0.01;
+      Y[i][1] += grad[i][1] * this.learningRate * 0.01;
+    }
+  }
+
+  private euclideanDistance(a: number[], b: number[]): number {
+    let sum = 0;
+    for (let i = 0; i < a.length; i++) {
+      sum += (a[i] - b[i]) ** 2;
+    }
+    return Math.sqrt(sum);
+  }
+}
+
+// Generate simple embeddings for Lean code (mimicking sentence transformers)
+function generateEmbeddings(leanCodes: string[]): number[][] {
+  const embeddingDim = 384; // Typical sentence transformer dimension
+  
+  return leanCodes.map(code => {
+    const embedding = new Array(embeddingDim).fill(0);
+    
+    // Simple feature extraction based on code characteristics
+    const codeHash = simpleHash(code);
+    const words = code.toLowerCase().split(/\s+/);
+    
+    for (let i = 0; i < embeddingDim; i++) {
+      let value = 0;
+      
+      // Add features based on code structure
+      if (code.includes('theorem')) value += 0.5;
+      if (code.includes('lemma')) value += 0.3;
+      if (code.includes('def')) value += 0.4;
+      if (code.includes('by')) value += 0.2;
+      if (code.includes('sorry')) value -= 0.3;
+      if (code.includes(':=')) value += 0.1;
+      
+      // Add word-based features
+      words.forEach(word => {
+        const wordHash = simpleHash(word + i.toString());
+        value += (wordHash % 100) / 1000;
+      });
+      
+      // Add position-based variation
+      value += Math.sin(i * 0.1 + codeHash * 0.01) * 0.1;
+      value += Math.cos(i * 0.05 + code.length * 0.02) * 0.1;
+      
+      embedding[i] = value;
+    }
+    
+    // Normalize
+    const norm = Math.sqrt(embedding.reduce((sum, val) => sum + val * val, 0));
+    return embedding.map(val => val / (norm || 1));
+  });
+}
+
 function simpleHash(str: string): number {
   let hash = 0;
+  if (!str) return hash;
   for (let i = 0; i < str.length; i++) {
     const char = str.charCodeAt(i);
     hash = ((hash << 5) - hash) + char;
@@ -17,67 +266,102 @@ function simpleHash(str: string): number {
   return hash;
 }
 
-// Rule-based clustering without ML dependencies
-function performSimpleClustering(leanCodes: string[]): number[] {
-  return leanCodes.map((code, index) => {
-    const codeLength = code.length;
-    const hasTheorem = code.includes('theorem');
-    const hasDef = code.includes('def');
-    const hasLemma = code.includes('lemma');
-    const hasBy = code.includes('by');
-    const hasSorry = code.includes('sorry');
-    const hasProof = code.includes(':=') && !hasSorry;
+// Calculate cluster centers (closest embeddings to cluster centers)
+function clusterCenterIdxs(embeddings: number[][], labels: number[]): number[] {
+  const nClusters = Math.max(...labels) + 1;
+  const closestEmbeddingIdxs: number[] = [];
+
+  for (let i = 0; i < nClusters; i++) {
+    const clusterIndices = labels.map((label, idx) => label === i ? idx : -1).filter(idx => idx !== -1);
     
-    // Enhanced rule-based clustering
-    if (hasTheorem && hasProof && codeLength > 100) return 0; // Complex proven theorems
-    if (hasTheorem && hasBy && !hasSorry) return 1; // Theorems with tactics
-    if (hasTheorem && hasSorry) return 2; // Theorem stubs
-    if (hasLemma) return 3; // Lemmas
-    if (hasDef) return 4; // Definitions
-    return index % 5; // Fallback: distribute evenly
-  });
+    if (clusterIndices.length === 0) continue;
+
+    // Calculate cluster center (mean of embeddings in cluster)
+    const clusterEmbeddings = clusterIndices.map(idx => embeddings[idx]);
+    const clusterCenter = new Array(embeddings[0].length).fill(0);
+    
+    for (const embedding of clusterEmbeddings) {
+      for (let j = 0; j < embedding.length; j++) {
+        clusterCenter[j] += embedding[j];
+      }
+    }
+    
+    for (let j = 0; j < clusterCenter.length; j++) {
+      clusterCenter[j] /= clusterEmbeddings.length;
+    }
+
+    // Find embedding closest to cluster center
+    let minDistance = Infinity;
+    let closestIdx = clusterIndices[0];
+    
+    for (const idx of clusterIndices) {
+      const distance = embeddings[idx].reduce((sum, val, j) => 
+        sum + (val - clusterCenter[j]) ** 2, 0);
+      
+      if (distance < minDistance) {
+        minDistance = distance;
+        closestIdx = idx;
+      }
+    }
+    
+    closestEmbeddingIdxs.push(closestIdx);
+  }
+
+  return closestEmbeddingIdxs;
 }
 
-function groupByCluster(positions: Array<{x: number, y: number, code: string, index: number}>, clusters: number[]) {
-  const groups: Record<number, typeof positions> = {};
-  positions.forEach((pos, i) => {
-    const cluster = clusters[i];
-    if (!groups[cluster]) groups[cluster] = [];
-    groups[cluster].push(pos);
-  });
-  return groups;
+// Fold title into multiple lines
+function foldTitle(title: string, width: number = 30): string {
+  if (!title || title.length <= width) return title;
+  
+  let result = '';
+  let rest = title;
+  while (rest.length > 0) {
+    result += rest.substring(0, width) + '\n';
+    rest = rest.substring(width);
+  }
+  return result.trim();
 }
 
+// Extract embeddings from formalizations
+function extractEmbeddings(formalizations: Formalization[]): number[][] {
+  return formalizations.map(f => f.embedding);
+}
+
+// Create formalizations with embeddings
+function createFormalizationsWithEmbeddings(informalStatement: string, leanCodes: string[]): Formalization[] {
+  const embeddings = generateEmbeddings(leanCodes);
+  
+  return leanCodes.map((leanCode, i) => ({
+    lean_code: leanCode,
+    embedding: embeddings[i],
+    informal: informalStatement
+  }));
+}
+
+// Safe HTML escaping
 function escapeHtml(text: string): string {
+  if (!text) return '';
   return text
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
+    .replace(/'/g, '&#39;')
+    .replace(/\n/g, ' ')
+    .replace(/\t/g, ' ')
+    .replace(/[\x00-\x1F\x7F-\x9F]/g, '');
 }
 
-function getClusterInfo(clusterNum: number): { name: string, color: string, description: string } {
-  const clusterTypes = [
-    { name: "Complex Proofs", color: "#1f77b4", description: "Proven theorems with complex logic" },
-    { name: "Tactic Proofs", color: "#ff7f0e", description: "Theorems using proof tactics" },
-    { name: "Theorem Stubs", color: "#2ca02c", description: "Theorem statements with sorry" },
-    { name: "Lemmas", color: "#d62728", description: "Supporting lemmas" },
-    { name: "Definitions", color: "#9467bd", description: "Type and function definitions" },
-    { name: "Mixed", color: "#8c564b", description: "Mixed formalization approaches" }
-  ];
-  
-  return clusterTypes[clusterNum] || clusterTypes[5];
-}
-
+// Main visualization function that replicates the Python implementation
 export function generateFrontendVisualization(
   informalStatement: string,
   leanCodes: string[]
 ): VisualizationData {
   const width = 900;
-  const height = 700;
-  const padding = 80;
-  
+  const height = 500;
+  const padding = 60;
+
   if (!leanCodes || leanCodes.length === 0) {
     return {
       svg: `<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
@@ -90,148 +374,154 @@ export function generateFrontendVisualization(
     };
   }
 
-  // Generate deterministic but varied positions
-  const positions = leanCodes.map((code, index) => {
-    const hash1 = simpleHash(code + index + informalStatement);
-    const hash2 = simpleHash(code + index + informalStatement + 'y');
-    
+  // Handle case with too few data points
+  if (leanCodes.length < 4) {
     return {
-      x: padding + (Math.abs(hash1) % (width - 2 * padding)),
-      y: padding + (Math.abs(hash2) % (height - 2 * padding)),
-      code: code,
-      index: index
+      svg: `<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
+        <rect width="${width}" height="${height}" fill="#f8f9fa"/>
+        <text x="${width/2}" y="${height/2}" text-anchor="middle" font-size="16" fill="#666">
+          Need at least 4 formalizations for clustering analysis (Currently: ${leanCodes.length})
+        </text>
+      </svg>`,
+      message: `Need at least 4 formalizations for clustering analysis (Currently: ${leanCodes.length})`
     };
-  });
+  }
 
-  // Perform clustering
-  const clusters = performSimpleClustering(leanCodes);
-  const uniqueClusters = [...new Set(clusters)];
+  // Create formalizations with embeddings
+  const formalizations = createFormalizationsWithEmbeddings(informalStatement, leanCodes);
+  const embeddings = extractEmbeddings(formalizations);
 
-  let svg = `
-    <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
-      <style>
-        .title { font: bold 18px sans-serif; fill: #2c3e50; }
-        .subtitle { font: 14px sans-serif; fill: #34495e; }
-        .code-text { font: 11px monospace; fill: #2c3e50; }
-        .cluster-label { font: bold 13px sans-serif; fill: #2c3e50; }
-        .legend-text { font: 12px sans-serif; fill: #2c3e50; }
-        .stats-text { font: 11px sans-serif; fill: #7f8c8d; }
-      </style>
-      
-      <!-- Background with subtle gradient -->
-      <defs>
-        <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" style="stop-color:#f8f9fa;stop-opacity:1" />
-          <stop offset="100%" style="stop-color:#e9ecef;stop-opacity:1" />
-        </linearGradient>
-        <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
-          <feDropShadow dx="2" dy="2" stdDeviation="3" flood-color="#00000020"/>
-        </filter>
-      </defs>
-      <rect width="${width}" height="${height}" fill="url(#bgGradient)" stroke="#dee2e6" stroke-width="2" rx="10"/>
-      
-      <!-- Title -->
-      <text x="${width/2}" y="35" text-anchor="middle" class="title">
-        Lean Code Formalization Analysis
-      </text>
-      <text x="${width/2}" y="58" text-anchor="middle" class="subtitle">
-        Statement: ${escapeHtml(informalStatement.substring(0, 70))}${informalStatement.length > 70 ? '...' : ''}
-      </text>
+  // 2-cluster analysis using SimpleKMeans
+  const kmeans2 = new SimpleKMeans(2);
+  const kmeans2Result = kmeans2.fit(embeddings);
+  const labels2Cluster = kmeans2Result.labels;
+  const cluster2CenterIdxs = clusterCenterIdxs(embeddings, labels2Cluster);
+
+  // 4-cluster analysis using SimpleKMeans  
+  const kmeans4 = new SimpleKMeans(Math.min(4, embeddings.length));
+  const kmeans4Result = kmeans4.fit(embeddings);
+  const labels4Cluster = kmeans4Result.labels;
+  const cluster4CenterIdxs = clusterCenterIdxs(embeddings, labels4Cluster);
+
+  // t-SNE transformation
+  const perplexity = Math.min(PERPLEXITY, embeddings.length - 1);
+  const tsne = new SimpleTSNE(perplexity);
+  const embeddings2d = tsne.fit(embeddings);
+
+  // Normalize coordinates to fit in SVG
+  const minX = Math.min(...embeddings2d.map(p => p[0]));
+  const maxX = Math.max(...embeddings2d.map(p => p[0]));
+  const minY = Math.min(...embeddings2d.map(p => p[1]));
+  const maxY = Math.max(...embeddings2d.map(p => p[1]));
+
+  const normalizedCoords = embeddings2d.map(([x, y]) => [
+    padding + ((x - minX) / (maxX - minX || 1)) * (width - 2 * padding),
+    padding + ((y - minY) / (maxY - minY || 1)) * ((height - 2 * padding) / 2)
+  ]);
+
+  // Colors for clusters
+  const colors2 = ['#1f77b4', '#ff7f0e'];
+  const colors4 = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728'];
+
+  let svg = `<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
+    <style>
+      .title { font: bold 14px sans-serif; fill: #2c3e50; }
+      .code-text { font: 10px monospace; fill: #2c3e50; }
+      .cluster-center { stroke: #000; stroke-width: 2; }
+    </style>
+    
+    <rect width="${width}" height="${height}" fill="white" stroke="#dee2e6" stroke-width="1"/>
   `;
 
-  // Draw cluster connections first (behind points)
-  const clusterGroups = groupByCluster(positions, clusters);
-  Object.entries(clusterGroups).forEach(([clusterId, points]) => {
-    const cluster = parseInt(clusterId);
-    const clusterInfo = getClusterInfo(cluster);
-    
-    if (points.length > 1) {
-      // Draw connections within cluster with subtle lines
-      for (let i = 0; i < points.length - 1; i++) {
-        for (let j = i + 1; j < points.length; j++) {
-          const distance = Math.sqrt(
-            Math.pow(points[i].x - points[j].x, 2) + 
-            Math.pow(points[i].y - points[j].y, 2)
-          );
-          
-          // Only connect nearby points to avoid clutter
-          if (distance < 200) {
-            svg += `<line x1="${points[i].x}" y1="${points[i].y}" 
-                         x2="${points[j].x}" y2="${points[j].y}" 
-                         stroke="${clusterInfo.color}" stroke-width="2" 
-                         opacity="0.3" stroke-dasharray="5,5"/>`;
-          }
-        }
-      }
-    }
-  });
-
-  // Draw points and labels
-  positions.forEach((pos, i) => {
-    const cluster = clusters[i];
-    const clusterInfo = getClusterInfo(cluster);
-    
-    // Draw point with shadow
-    svg += `<circle cx="${pos.x}" cy="${pos.y}" r="12" 
-                   fill="${clusterInfo.color}" stroke="#fff" stroke-width="3" 
-                   opacity="0.9" filter="url(#shadow)"/>`;
-    
-    // Add formalization number
-    svg += `<text x="${pos.x}" y="${pos.y + 5}" text-anchor="middle" 
-                 font-family="sans-serif" font-size="12" font-weight="bold" fill="white">
-             ${i + 1}
-            </text>`;
-    
-    // Add truncated code snippet with background
-    const truncatedCode = pos.code.length > 45 ? pos.code.substring(0, 42) + '...' : pos.code;
-    const textX = pos.x + 20;
-    const textY = pos.y - 5;
-    
-    // Background rectangle for text readability
-    svg += `<rect x="${textX - 5}" y="${textY - 15}" width="${Math.min(truncatedCode.length * 6.5, 300)}" 
-                 height="20" fill="white" opacity="0.8" rx="3" stroke="#ddd"/>`;
-    
-    svg += `<text x="${textX}" y="${textY}" class="code-text">${escapeHtml(truncatedCode)}</text>`;
-  });
-
-  // Add enhanced legend
-  const legendStartY = height - 160;
-  svg += `<rect x="15" y="${legendStartY - 25}" width="250" height="${uniqueClusters.length * 25 + 40}" 
-               fill="white" opacity="0.9" rx="8" stroke="#ddd" stroke-width="1"/>`;
-  svg += `<text x="25" y="${legendStartY - 5}" class="cluster-label">Formalization Clusters:</text>`;
+  // 2-cluster plot (left side)
+  const plot1X = 0;
+  const plot1Width = width / 2;
   
-  uniqueClusters.forEach((cluster, i) => {
-    const clusterInfo = getClusterInfo(cluster);
-    const count = clusters.filter(c => c === cluster).length;
-    const y = legendStartY + 20 + i * 25;
+  svg += `<text x="${plot1X + plot1Width/2}" y="30" text-anchor="middle" class="title">
+    2-cluster: ${escapeHtml(foldTitle(informalStatement, 25))}
+  </text>`;
+
+  // Plot 2-cluster points
+  normalizedCoords.forEach(([x, y], i) => {
+    const adjustedX = plot1X + (x / width) * plot1Width;
+    const adjustedY = y + 50;
+    const color = colors2[labels2Cluster[i]] || colors2[0];
     
-    svg += `<circle cx="35" cy="${y}" r="8" fill="${clusterInfo.color}"/>`;
-    svg += `<text x="50" y="${y + 5}" class="legend-text">
-             ${clusterInfo.name} (${count})
-            </text>`;
+    svg += `<circle cx="${adjustedX}" cy="${adjustedY}" r="6" 
+                   fill="${color}" opacity="0.7"/>`;
   });
 
-  // Add statistics panel
-  const statsY = height - 80;
-  svg += `<rect x="${width - 280}" y="${statsY - 25}" width="260" height="60" 
-               fill="white" opacity="0.9" rx="8" stroke="#ddd" stroke-width="1"/>`;
-  svg += `<text x="${width - 270}" y="${statsY - 5}" class="cluster-label">Statistics:</text>`;
-  svg += `<text x="${width - 270}" y="${statsY + 15}" class="stats-text">
-           Total Formalizations: ${leanCodes.length}
-          </text>`;
-  svg += `<text x="${width - 270}" y="${statsY + 35}" class="stats-text">
-           Unique Approaches: ${uniqueClusters.length}
-          </text>`;
+  // Plot 2-cluster centers
+  cluster2CenterIdxs.forEach(idx => {
+    const [x, y] = normalizedCoords[idx];
+    const adjustedX = plot1X + (x / width) * plot1Width;
+    const adjustedY = y + 50;
+    
+    svg += `<g transform="translate(${adjustedX}, ${adjustedY})">
+              <path d="M-6,-6 L6,6 M-6,6 L6,-6" stroke="red" stroke-width="3" class="cluster-center"/>
+            </g>`;
+    
+    // Add code text for cluster centers
+    const code = formalizations[idx].lean_code;
+    const shortCode = code.length > 50 ? code.substring(0, 47) + '...' : code;
+    const lines = foldTitle(shortCode, 20).split('\n');
+    
+    lines.forEach((line, lineIdx) => {
+      svg += `<text x="${adjustedX}" y="${adjustedY + 15 + lineIdx * 12}" 
+                   text-anchor="middle" class="code-text">
+                ${escapeHtml(line)}
+              </text>`;
+    });
+  });
 
-  // Add timestamp
-  svg += `<text x="${width - 15}" y="${height - 15}" text-anchor="end" class="stats-text">
-           Generated: ${new Date().toLocaleTimeString()}
-          </text>`;
+  // 4-cluster plot (right side)
+  const plot2X = width / 2;
+  const plot2Width = width / 2;
+
+  svg += `<text x="${plot2X + plot2Width/2}" y="30" text-anchor="middle" class="title">
+    4-cluster
+  </text>`;
+
+  // Plot 4-cluster points
+  normalizedCoords.forEach(([x, y], i) => {
+    const adjustedX = plot2X + (x / width) * plot2Width;
+    const adjustedY = y + 50;
+    const color = colors4[labels4Cluster[i]] || colors4[0];
+    
+    svg += `<circle cx="${adjustedX}" cy="${adjustedY}" r="6" 
+                   fill="${color}" opacity="0.7"/>`;
+  });
+
+  // Plot 4-cluster centers
+  cluster4CenterIdxs.forEach(idx => {
+    const [x, y] = normalizedCoords[idx];
+    const adjustedX = plot2X + (x / width) * plot2Width;
+    const adjustedY = y + 50;
+    
+    svg += `<g transform="translate(${adjustedX}, ${adjustedY})">
+              <path d="M-6,-6 L6,6 M-6,6 L6,-6" stroke="red" stroke-width="3" class="cluster-center"/>
+            </g>`;
+    
+    // Add code text for cluster centers
+    const code = formalizations[idx].lean_code;
+    const shortCode = code.length > 50 ? code.substring(0, 47) + '...' : code;
+    const lines = foldTitle(shortCode, 20).split('\n');
+    
+    lines.forEach((line, lineIdx) => {
+      svg += `<text x="${adjustedX}" y="${adjustedY + 15 + lineIdx * 12}" 
+                   text-anchor="middle" class="code-text">
+                ${escapeHtml(line)}
+              </text>`;
+    });
+  });
+
+  // Add vertical separator line
+  svg += `<line x1="${width/2}" y1="40" x2="${width/2}" y2="${height-20}" stroke="#dee2e6" stroke-width="1"/>`;
 
   svg += '</svg>';
 
   return {
     svg,
-    message: `Generated visualization for ${leanCodes.length} formalizations with ${uniqueClusters.length} different approaches`
+    message: `Generated t-SNE visualization with K-means clustering (2 and 4 clusters) for ${leanCodes.length} formalizations`
   };
 }
