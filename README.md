@@ -1,4 +1,65 @@
-# Welcome to your Lovable project
+# Lean - Informal to Formal Converter
+
+Transform your informal mathematical statements into formal Lean 4 proofs with the power of AI, complete with embedding visualizations.
+
+## Features
+
+- **AI-Powered Conversion**: Convert informal mathematical statements to formal Lean 4 proofs using Google Gemini AI
+- **Copy to Clipboard**: Easily copy generated proofs with one click
+- **Embedding Visualizations**: Generate visual representations of how different formalizations relate in semantic space
+- **Responsive Design**: Works seamlessly on desktop and mobile devices
+- **Clean Interface**: Modern, intuitive UI built with React and shadcn/ui
+
+## Getting Started
+
+### Frontend
+
+1. Install dependencies:
+   ```bash
+   npm install
+   ```
+
+2. Start the development server:
+   ```bash
+   npm run dev
+   ```
+
+3. Open [http://localhost:8080](http://localhost:8080) in your browser
+
+### Backend (for visualizations)
+
+1. Set up the Python backend:
+   ```bash
+   cd backend
+   ./setup.sh
+   ```
+
+2. Start the backend server:
+   ```bash
+   source venv/bin/activate
+   python app.py
+   ```
+
+The backend will run on [http://localhost:5000](http://localhost:5000)
+
+## Usage
+
+1. **Basic Conversion**:
+   - Enter an informal mathematical statement (e.g., "The sum of two even numbers is even")
+   - Click "Convert to Lean Proof" 
+   - Copy the generated formal proof using the copy button
+
+2. **Embedding Visualizations**:
+   - After generating a proof, click "Generate Embedding Plot"
+   - View clustering analysis showing how different formalizations relate
+   - Explore 2-cluster and 4-cluster visualizations
+
+## Architecture
+
+- **Frontend**: React + TypeScript + Vite + shadcn/ui
+- **Backend**: Python Flask API with ML libraries
+- **AI Integration**: Google Gemini API for proof generation
+- **Visualization**: matplotlib + scikit-learn + sentence-transformers
 
 ## Project info
 

@@ -4,6 +4,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Loader2, BookOpen, Sparkles, Copy } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { EmbeddingVisualization } from "./EmbeddingVisualization";
 
 const GEMINI_API_KEY = "AIzaSyDJzAJF422SyZ99Z6CGihnJqKIDlQn4CfM";
 
@@ -194,6 +195,13 @@ Example: 'The sum of two even numbers is even'"
             </CardContent>
           </Card>
         </div>
+
+        {/* Embedding Visualization */}
+        <EmbeddingVisualization 
+          informalStatement={input}
+          leanCode={output}
+          isVisible={!!output && !isLoading}
+        />
 
         {/* Footer */}
         <div className="text-center text-sm text-muted-foreground">
