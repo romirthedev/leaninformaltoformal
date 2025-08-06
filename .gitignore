@@ -64,3 +64,15 @@ backend/models/
 *.png
 *.jpg
 *.jpeg
+
+# Test files
+test-*.js
+test-*.cjs
+test-output.*
+temp-*
+dev-api-server.js
+
+# Deployment files (keep only the main ones)
+Procfile
+railway.sh
+requirements.txt

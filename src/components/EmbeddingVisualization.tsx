@@ -13,6 +13,7 @@ interface VisualizationProps {
 export const EmbeddingVisualization = ({ informalStatement, leanCode, isVisible }: VisualizationProps) => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [plotImage, setPlotImage] = useState<string>("");
+  const [plotFormat, setPlotFormat] = useState<'png' | 'svg'>('png');
   const [error, setError] = useState<string>("");
   const { toast } = useToast();
 
@@ -42,7 +43,12 @@ export const EmbeddingVisualization = ({ informalStatement, leanCode, isVisible 
       
       const leanCodes = [leanCode, ...variations.filter(code => code !== leanCode)];
 
-      const response = await fetch('http://localhost:5000/api/visualize', {
+      // Use appropriate API endpoint
+      const apiUrl = process.env.NODE_ENV === 'production' 
+        ? '/api/visualize' 
+        : 'http://localhost:3001/api/visualize'; // Local development server
+
+      const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -54,16 +60,18 @@ export const EmbeddingVisualization = ({ informalStatement, leanCode, isVisible 
       });
 
       if (!response.ok) {
-        throw new Error(`API request failed: ${response.status}`);
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `API request failed: ${response.status}`);
       }
 
       const data = await response.json();
       
-      if (data.success) {
-        setPlotImage(data.plot_image);
+      if (data.plot) {
+        setPlotImage(data.plot);
+        setPlotFormat(data.format || 'png');
         toast({
           title: "Visualization generated!",
-          description: "The embedding visualization has been created successfully.",
+          description: data.message || "The embedding visualization has been created successfully.",
         });
       } else {
         throw new Error(data.error || "Failed to generate visualization");
@@ -130,15 +138,24 @@ export const EmbeddingVisualization = ({ informalStatement, leanCode, isVisible 
           <div className="space-y-2">
             <h4 className="text-sm font-medium">Visualization Results:</h4>
             <div className="border rounded-md p-4 bg-muted/20">
-              <img 
-                src={`data:image/png;base64,${plotImage}`} 
-                alt="Embedding Visualization"
-                className="w-full h-auto rounded-md"
-              />
+              {plotFormat === 'svg' ? (
+                <div 
+                  className="w-full"
+                  dangerouslySetInnerHTML={{ 
+                    __html: atob(plotImage) 
+                  }}
+                />
+              ) : (
+                <img 
+                  src={`data:image/png;base64,${plotImage}`} 
+                  alt="Embedding Visualization"
+                  className="w-full h-auto rounded-md"
+                />
+              )}
             </div>
             <p className="text-xs text-muted-foreground">
-              Red X marks indicate cluster centers. The plots show how different formalizations 
-              group together based on their semantic similarity in embedding space.
+              The visualization shows how different Lean formalizations cluster together based on their 
+              semantic similarity. Connected points represent related formalization approaches.
             </p>
           </div>
         )}

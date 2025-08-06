@@ -1,0 +1,12 @@
+{
+  "name": "lean-visualization-api",
+  "version": "1.0.0",
+  "description": "Serverless API for Lean code embedding visualization",
+  "main": "visualize.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": ["lean", "visualization", "embeddings", "serverless"],
+  "author": "",
+  "license": "MIT"
+}
