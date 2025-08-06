@@ -358,9 +358,9 @@ export function generateFrontendVisualization(
   informalStatement: string,
   leanCodes: string[]
 ): VisualizationData {
-  const width = 700;
-  const height = 400;
-  const padding = 50;
+  const width = 900;
+  const height = 500;
+  const padding = 60;
 
   if (!leanCodes || leanCodes.length === 0) {
     return {
@@ -423,10 +423,10 @@ export function generateFrontendVisualization(
   const colors2 = ['#1f77b4', '#ff7f0e'];
   const colors4 = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728'];
 
-  let svg = `<svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg" style="max-width: 100%; height: auto;">
+  let svg = `<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
     <style>
-      .title { font: bold 12px sans-serif; fill: #2c3e50; }
-      .code-text { font: 8px monospace; fill: #2c3e50; }
+      .title { font: bold 14px sans-serif; fill: #2c3e50; }
+      .code-text { font: 10px monospace; fill: #2c3e50; }
       .cluster-center { stroke: #000; stroke-width: 2; }
     </style>
     
@@ -437,17 +437,17 @@ export function generateFrontendVisualization(
   const plot1X = 0;
   const plot1Width = width / 2;
   
-  svg += `<text x="${plot1X + plot1Width/2}" y="25" text-anchor="middle" class="title">
-    2-cluster: ${escapeHtml(foldTitle(informalStatement, 20))}
+  svg += `<text x="${plot1X + plot1Width/2}" y="30" text-anchor="middle" class="title">
+    2-cluster: ${escapeHtml(foldTitle(informalStatement, 25))}
   </text>`;
 
   // Plot 2-cluster points
   normalizedCoords.forEach(([x, y], i) => {
     const adjustedX = plot1X + (x / width) * plot1Width;
-    const adjustedY = y + 40;
+    const adjustedY = y + 50;
     const color = colors2[labels2Cluster[i]] || colors2[0];
     
-    svg += `<circle cx="${adjustedX}" cy="${adjustedY}" r="4" 
+    svg += `<circle cx="${adjustedX}" cy="${adjustedY}" r="6" 
                    fill="${color}" opacity="0.7"/>`;
   });
 
@@ -455,19 +455,19 @@ export function generateFrontendVisualization(
   cluster2CenterIdxs.forEach(idx => {
     const [x, y] = normalizedCoords[idx];
     const adjustedX = plot1X + (x / width) * plot1Width;
-    const adjustedY = y + 40;
+    const adjustedY = y + 50;
     
     svg += `<g transform="translate(${adjustedX}, ${adjustedY})">
-              <path d="M-4,-4 L4,4 M-4,4 L4,-4" stroke="red" stroke-width="2" class="cluster-center"/>
+              <path d="M-6,-6 L6,6 M-6,6 L6,-6" stroke="red" stroke-width="3" class="cluster-center"/>
             </g>`;
     
     // Add code text for cluster centers
     const code = formalizations[idx].lean_code;
-    const shortCode = code.length > 40 ? code.substring(0, 37) + '...' : code;
-    const lines = foldTitle(shortCode, 15).split('\n');
+    const shortCode = code.length > 50 ? code.substring(0, 47) + '...' : code;
+    const lines = foldTitle(shortCode, 20).split('\n');
     
     lines.forEach((line, lineIdx) => {
-      svg += `<text x="${adjustedX}" y="${adjustedY + 12 + lineIdx * 10}" 
+      svg += `<text x="${adjustedX}" y="${adjustedY + 15 + lineIdx * 12}" 
                    text-anchor="middle" class="code-text">
                 ${escapeHtml(line)}
               </text>`;
@@ -478,17 +478,17 @@ export function generateFrontendVisualization(
   const plot2X = width / 2;
   const plot2Width = width / 2;
 
-  svg += `<text x="${plot2X + plot2Width/2}" y="25" text-anchor="middle" class="title">
+  svg += `<text x="${plot2X + plot2Width/2}" y="30" text-anchor="middle" class="title">
     4-cluster
   </text>`;
 
   // Plot 4-cluster points
   normalizedCoords.forEach(([x, y], i) => {
     const adjustedX = plot2X + (x / width) * plot2Width;
-    const adjustedY = y + 40;
+    const adjustedY = y + 50;
     const color = colors4[labels4Cluster[i]] || colors4[0];
     
-    svg += `<circle cx="${adjustedX}" cy="${adjustedY}" r="4" 
+    svg += `<circle cx="${adjustedX}" cy="${adjustedY}" r="6" 
                    fill="${color}" opacity="0.7"/>`;
   });
 
@@ -496,19 +496,19 @@ export function generateFrontendVisualization(
   cluster4CenterIdxs.forEach(idx => {
     const [x, y] = normalizedCoords[idx];
     const adjustedX = plot2X + (x / width) * plot2Width;
-    const adjustedY = y + 40;
+    const adjustedY = y + 50;
     
     svg += `<g transform="translate(${adjustedX}, ${adjustedY})">
-              <path d="M-4,-4 L4,4 M-4,4 L4,-4" stroke="red" stroke-width="2" class="cluster-center"/>
+              <path d="M-6,-6 L6,6 M-6,6 L6,-6" stroke="red" stroke-width="3" class="cluster-center"/>
             </g>`;
     
     // Add code text for cluster centers
     const code = formalizations[idx].lean_code;
-    const shortCode = code.length > 40 ? code.substring(0, 37) + '...' : code;
-    const lines = foldTitle(shortCode, 15).split('\n');
+    const shortCode = code.length > 50 ? code.substring(0, 47) + '...' : code;
+    const lines = foldTitle(shortCode, 20).split('\n');
     
     lines.forEach((line, lineIdx) => {
-      svg += `<text x="${adjustedX}" y="${adjustedY + 12 + lineIdx * 10}" 
+      svg += `<text x="${adjustedX}" y="${adjustedY + 15 + lineIdx * 12}" 
                    text-anchor="middle" class="code-text">
                 ${escapeHtml(line)}
               </text>`;
@@ -516,7 +516,7 @@ export function generateFrontendVisualization(
   });
 
   // Add vertical separator line
-  svg += `<line x1="${width/2}" y1="35" x2="${width/2}" y2="${height-15}" stroke="#dee2e6" stroke-width="1"/>`;
+  svg += `<line x1="${width/2}" y1="40" x2="${width/2}" y2="${height-20}" stroke="#dee2e6" stroke-width="1"/>`;
 
   svg += '</svg>';
 

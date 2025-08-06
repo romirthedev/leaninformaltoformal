@@ -134,9 +134,10 @@ export const EmbeddingVisualization = ({ informalStatement, leanCode, isVisible 
         {plotImage && (
           <div className="space-y-2">
             <h4 className="text-sm font-medium">Visualization Results:</h4>
-            <div className="border rounded-md p-4 bg-muted/20">
+            <div className="border rounded-md p-2 bg-muted/20 overflow-hidden">
               <div 
-                className="w-full"
+                className="w-full flex justify-center"
+                style={{ maxWidth: '100%' }}
                 dangerouslySetInnerHTML={{ 
                   __html: (() => {
                     try {
