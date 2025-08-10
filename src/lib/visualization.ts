@@ -460,6 +460,7 @@ export function generateFrontendVisualization(
     const paddingBox = 8;
     const popupWidth = Math.min(280, Math.max(160, Math.max(...popupLines.map(l => l.length)) * 6 + paddingBox * 2));
     const popupHeight = popupLines.length * lineHeight + paddingBox * 2;
+    const leanAttr = encodeURIComponent(formalizations[i].lean_code);
 
     // Dynamic positioning within left plot
     const localX = adjustedX - plot1X;
@@ -472,7 +473,7 @@ export function generateFrontendVisualization(
     const showBelow = availableTop < popupHeight + 10;
     const popupOffsetY = showBelow ? 10 : -10 - popupHeight;
 
-    svg += `<g class=\"pt\" transform=\"translate(${adjustedX}, ${adjustedY})\">`+
+    svg += `<g class=\"pt\" data-lean=\"${leanAttr}\" transform=\"translate(${adjustedX}, ${adjustedY})\">`+
             `<circle r=\"4\" fill=\"${color}\" opacity=\"0.8\">`+
               `<title>${codeTitle}</title>`+
             `</circle>`+
@@ -527,6 +528,7 @@ export function generateFrontendVisualization(
     const paddingBox = 8;
     const popupWidth = Math.min(280, Math.max(160, Math.max(...popupLines.map(l => l.length)) * 6 + paddingBox * 2));
     const popupHeight = popupLines.length * lineHeight + paddingBox * 2;
+    const leanAttr = encodeURIComponent(formalizations[i].lean_code);
 
     // Dynamic positioning within right plot
     const localX = adjustedX - plot2X;
@@ -539,7 +541,7 @@ export function generateFrontendVisualization(
     const showBelow = availableTop < popupHeight + 10;
     const popupOffsetY = showBelow ? 10 : -10 - popupHeight;
 
-    svg += `<g class=\"pt\" transform=\"translate(${adjustedX}, ${adjustedY})\">`+
+    svg += `<g class=\"pt\" data-lean=\"${leanAttr}\" transform=\"translate(${adjustedX}, ${adjustedY})\">`+
             `<circle r=\"4\" fill=\"${color}\" opacity=\"0.8\">`+
               `<title>${codeTitle}</title>`+
             `</circle>`+
