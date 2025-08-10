@@ -13,7 +13,7 @@ interface VisualizationProps {
 
 export const EmbeddingVisualization = ({ informalStatement, leanCode, isVisible }: VisualizationProps) => {
   const [isGenerating, setIsGenerating] = useState(false);
-  const [plotImage, setPlotImage] = useState<string>("");
+  const [plotSvg, setPlotSvg] = useState<string>("");
   const [error, setError] = useState<string>("");
   const { toast } = useToast();
 
@@ -29,7 +29,7 @@ export const EmbeddingVisualization = ({ informalStatement, leanCode, isVisible 
 
     setIsGenerating(true);
     setError("");
-    setPlotImage("");
+    setPlotSvg("");
 
     try {
       // Create multiple variations of the Lean code for analysis
@@ -45,29 +45,8 @@ export const EmbeddingVisualization = ({ informalStatement, leanCode, isVisible 
       // Generate frontend visualization
       const frontendResult = generateFrontendVisualization(informalStatement, leanCodes);
       
-      // Safe encoding for SVG - handle Unicode characters properly
-      let svgBase64: string;
-      try {
-        // Method 1: Full Unicode support
-        svgBase64 = btoa(unescape(encodeURIComponent(frontendResult.svg)));
-      } catch (encodingError) {
-        try {
-          // Method 2: Use TextEncoder for better Unicode handling
-          const encoder = new TextEncoder();
-          const bytes = encoder.encode(frontendResult.svg);
-          svgBase64 = btoa(String.fromCharCode(...bytes));
-        } catch (fallback1Error) {
-          try {
-            // Method 3: Strip all non-ASCII characters and use simple btoa
-            const cleanSvg = frontendResult.svg.replace(/[^\x00-\x7F]/g, "");
-            svgBase64 = btoa(cleanSvg);
-          } catch (finalError) {
-            throw new Error("Unable to encode SVG: " + finalError.message);
-          }
-        }
-      }
-      
-      setPlotImage(svgBase64);
+      // Directly inject SVG markup for full interactivity (hover, CSS inside SVG)
+      setPlotSvg(frontendResult.svg);
       toast({
         title: "Visualization Generated! 📊",
         description: frontendResult.message,
@@ -131,40 +110,18 @@ export const EmbeddingVisualization = ({ informalStatement, leanCode, isVisible 
           </div>
         )}
 
-        {plotImage && (
+        {plotSvg && (
           <div className="space-y-2">
             <h4 className="text-sm font-medium">Visualization Results:</h4>
             <div className="border rounded-md p-2 bg-muted/20 overflow-hidden">
               <div 
                 className="w-full flex justify-center"
                 style={{ maxWidth: '100%' }}
-                dangerouslySetInnerHTML={{ 
-                  __html: (() => {
-                    try {
-                      return decodeURIComponent(escape(atob(plotImage)));
-                    } catch (err) {
-                      try {
-                        // Fallback 1: Simple atob
-                        return atob(plotImage);
-                      } catch (fallback1Error) {
-                        try {
-                          // Fallback 2: TextDecoder approach
-                          const bytes = atob(plotImage).split('').map(c => c.charCodeAt(0));
-                          const decoder = new TextDecoder();
-                          return decoder.decode(new Uint8Array(bytes));
-                        } catch (finalError) {
-                          return `<div style="padding: 20px; color: red;">Error decoding SVG: ${finalError.message}</div>`;
-                        }
-                      }
-                    }
-                  })()
-                }}
+                dangerouslySetInnerHTML={{ __html: plotSvg }}
               />
             </div>
             <p className="text-xs text-muted-foreground">
-              The visualization shows how different Lean formalizations cluster together based on their 
-              characteristics. Connected points represent related formalization approaches.
-              Generated entirely in the browser without server dependencies.
+              Hover over points to see the corresponding formal Lean statement. Generated entirely in the browser.
             </p>
           </div>
         )}
