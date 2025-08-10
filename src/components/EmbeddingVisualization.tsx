@@ -25,6 +25,9 @@ export const EmbeddingVisualization = ({ informalStatement, leanCode, isVisible 
   const [hoverPos, setHoverPos] = useState<{x:number;y:number}|null>(null);
   const svgContainerRef = useRef<HTMLDivElement>(null);
 
+  // Click-to-copy control
+  const [clickCopy, setClickCopy] = useState(false);
+
   useEffect(() => {
     if (!plotSvg || !svgContainerRef.current) return;
     const container = svgContainerRef.current;
@@ -54,15 +57,50 @@ export const EmbeddingVisualization = ({ informalStatement, leanCode, isVisible 
       setHoverCode("");
     };
 
+    const copyText = async (text: string) => {
+      try {
+        if (navigator.clipboard && window.isSecureContext) {
+          await navigator.clipboard.writeText(text);
+        } else {
+          const ta = document.createElement('textarea');
+          ta.value = text;
+          ta.style.position = 'fixed';
+          ta.style.left = '-9999px';
+          document.body.appendChild(ta);
+          ta.focus();
+          ta.select();
+          document.execCommand('copy');
+          document.body.removeChild(ta);
+        }
+        toast({ title: 'Copied to clipboard', description: 'Formal statement copied.' });
+      } catch (err) {
+        toast({ title: 'Copy failed', description: 'Could not copy to clipboard.', variant: 'destructive' });
+      }
+    };
+
+    const onClick = (e: MouseEvent) => {
+      if (!clickCopy) return;
+      const target = e.target as HTMLElement | null;
+      if (!target) return;
+      const group = (target.closest && target.closest('g.pt')) as SVGGElement | null;
+      if (!group) return;
+      const leanAttr = group.getAttribute('data-lean');
+      if (!leanAttr) return;
+      const decoded = decodeURIComponent(leanAttr);
+      copyText(decoded);
+    };
+
     container.addEventListener('mouseover', onMouseOver);
     container.addEventListener('mousemove', onMouseMove);
     container.addEventListener('mouseleave', onMouseLeave);
+    container.addEventListener('click', onClick);
     return () => {
       container.removeEventListener('mouseover', onMouseOver);
       container.removeEventListener('mousemove', onMouseMove);
       container.removeEventListener('mouseleave', onMouseLeave);
+      container.removeEventListener('click', onClick);
     };
-  }, [plotSvg, detachHover, hoverCode]);
+  }, [plotSvg, detachHover, hoverCode, clickCopy, toast]);
 
   const generateVisualization = async () => {
     if (!informalStatement || !leanCode) {
@@ -132,6 +170,10 @@ export const EmbeddingVisualization = ({ informalStatement, leanCode, isVisible 
         <div className="flex items-center gap-2 pt-1">
           <Switch id="detach-hover" checked={detachHover} onCheckedChange={setDetachHover} />
           <Label htmlFor="detach-hover" className="text-sm">Detach hover into floating popup (prevents off-screen clipping)</Label>
+        </div>
+        <div className="flex items-center gap-2">
+          <Switch id="click-copy" checked={clickCopy} onCheckedChange={setClickCopy} />
+          <Label htmlFor="click-copy" className="text-sm">Click on a point to copy the formal statement</Label>
         </div>
 
         {error && (
