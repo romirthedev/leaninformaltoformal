@@ -453,12 +453,7 @@ export function generateFrontendVisualization(
       .title { font: bold 12px sans-serif; fill: #2c3e50; }
       .code-text { font: 8px monospace; fill: #2c3e50; }
       .cluster-center { stroke: #000; stroke-width: 2; }
-      /* Hover popup styles */
       .pt { cursor: pointer; }
-      .pt .popup { visibility: hidden; opacity: 0; transition: opacity .15s ease-in-out; }
-      .pt:hover .popup { visibility: visible; opacity: 1; }
-      .popup rect { fill: #ffffff; stroke: #94a3b8; stroke-width: 1; rx: 6; ry: 6; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.08)); }
-      .popup text { font: 10px monospace; fill: #111827; }
     </style>
     
     <rect width="${width}" height="${height}" fill="white" stroke="#dee2e6" stroke-width="1"/>
@@ -479,34 +474,12 @@ export function generateFrontendVisualization(
     const color = colors2[labels2Cluster[i]] || colors2[0];
     const statementOnly = extractStatement(formalizations[i].lean_code);
     const codeTitle = escapeHtml(statementOnly);
-
-    // Build popup content - just the statement
-    const popupLines = foldTitle(statementOnly, 40).split('\n').map(escapeHtml);
-    const lineHeight = 12;
-    const paddingBox = 8;
-    const popupWidth = Math.min(280, Math.max(160, Math.max(...popupLines.map(l => l.length)) * 6 + paddingBox * 2));
-    const popupHeight = popupLines.length * lineHeight + paddingBox * 2;
     const leanAttr = encodeURIComponent(statementOnly);
-
-    // Dynamic positioning within left plot
-    const localX = adjustedX - plot1X;
-    const availableRight = plot1Width - localX;
-    const showLeft = availableRight < popupWidth + 20;
-    const popupOffsetX = showLeft ? -(popupWidth + 10) : 10;
-
-    const topBound = 35; // top of plotting area
-    const availableTop = adjustedY - topBound;
-    const showBelow = availableTop < popupHeight + 10;
-    const popupOffsetY = showBelow ? 10 : -10 - popupHeight;
 
     svg += `<g class=\"pt\" data-lean=\"${leanAttr}\" transform=\"translate(${adjustedX}, ${adjustedY})\">`+
             `<circle r=\"4\" fill=\"${color}\" opacity=\"0.8\">`+
               `<title>${codeTitle}</title>`+
             `</circle>`+
-            `<g class=\"popup\" transform=\"translate(${popupOffsetX}, ${popupOffsetY})\">`+
-              `<rect width=\"${popupWidth}\" height=\"${popupHeight}\" rx=\"6\" ry=\"6\" />`+
-              popupLines.map((line, idx) => `<text x=\"${paddingBox}\" y=\"${paddingBox + (idx+1)*lineHeight - 3}\">${line}</text>`).join('')+
-            `</g>`+
           `</g>`;
   });
 
@@ -548,34 +521,12 @@ export function generateFrontendVisualization(
     const color = colors4[labels4Cluster[i]] || colors4[0];
     const statementOnly = extractStatement(formalizations[i].lean_code);
     const codeTitle = escapeHtml(statementOnly);
-
-    // Build popup content - just the statement
-    const popupLines = foldTitle(statementOnly, 40).split('\n').map(escapeHtml);
-    const lineHeight = 12;
-    const paddingBox = 8;
-    const popupWidth = Math.min(280, Math.max(160, Math.max(...popupLines.map(l => l.length)) * 6 + paddingBox * 2));
-    const popupHeight = popupLines.length * lineHeight + paddingBox * 2;
     const leanAttr = encodeURIComponent(statementOnly);
-
-    // Dynamic positioning within right plot
-    const localX = adjustedX - plot2X;
-    const availableRight = plot2Width - localX;
-    const showLeft = availableRight < popupWidth + 20;
-    const popupOffsetX = showLeft ? -(popupWidth + 10) : 10;
-
-    const topBound = 35;
-    const availableTop = adjustedY - topBound;
-    const showBelow = availableTop < popupHeight + 10;
-    const popupOffsetY = showBelow ? 10 : -10 - popupHeight;
 
     svg += `<g class=\"pt\" data-lean=\"${leanAttr}\" transform=\"translate(${adjustedX}, ${adjustedY})\">`+
             `<circle r=\"4\" fill=\"${color}\" opacity=\"0.8\">`+
               `<title>${codeTitle}</title>`+
             `</circle>`+
-            `<g class=\"popup\" transform=\"translate(${popupOffsetX}, ${popupOffsetY})\">`+
-              `<rect width=\"${popupWidth}\" height=\"${popupHeight}\" rx=\"6\" ry=\"6\" />`+
-              popupLines.map((line, idx) => `<text x=\"${paddingBox}\" y=\"${paddingBox + (idx+1)*lineHeight - 3}\">${line}</text>`).join('')+
-            `</g>`+
           `</g>`;
   });
 

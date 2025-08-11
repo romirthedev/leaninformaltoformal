@@ -19,8 +19,8 @@ export const EmbeddingVisualization = ({ informalStatement, leanCode, isVisible 
   const [error, setError] = useState<string>("");
   const { toast } = useToast();
 
-  // Detachable popup controls
-  const [detachHover, setDetachHover] = useState(false);
+  // Detachable popup controls - always enabled now
+  const [detachHover, setDetachHover] = useState(true);
   const [hoverCode, setHoverCode] = useState<string>("");
   const [hoverPos, setHoverPos] = useState<{x:number;y:number}|null>(null);
   const svgContainerRef = useRef<HTMLDivElement>(null);
@@ -203,7 +203,7 @@ export const EmbeddingVisualization = ({ informalStatement, leanCode, isVisible 
 
         <div className="flex items-center gap-2 pt-1">
           <Switch id="detach-hover" checked={detachHover} onCheckedChange={setDetachHover} />
-          <Label htmlFor="detach-hover" className="text-sm">Detach hover into floating popup (prevents off-screen clipping)</Label>
+          <Label htmlFor="detach-hover" className="text-sm">Enable hover popup (shows formal statements on hover)</Label>
         </div>
         <div className="flex items-center gap-2">
           <Switch id="click-copy" checked={clickCopy} onCheckedChange={setClickCopy} />
@@ -232,7 +232,7 @@ export const EmbeddingVisualization = ({ informalStatement, leanCode, isVisible 
             </div>
             <p className="text-xs text-muted-foreground">
               Hover over points to see the corresponding formal Lean statement (without proof). 
-              Enable the toggle to show a floating popup that stays in-view. Points are colored by cluster.
+              Points are colored by cluster. Use the toggles above to enable hover and click-to-copy features.
             </p>
           </div>
         )}
