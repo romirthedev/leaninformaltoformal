@@ -117,13 +117,46 @@ export const EmbeddingVisualization = ({ informalStatement, leanCode, isVisible 
     setPlotSvg("");
 
     try {
-      const variations = [
-        leanCode.replace("theorem", "lemma"),
-        leanCode.replace(":=", ":\n"),
-        leanCode + "\n-- Alternative approach",
-        leanCode.replace("by sorry", "by exact?")
-      ];
-      const leanCodes = [leanCode, ...variations.filter(code => code !== leanCode)];
+      // Generate 50 variations for richer clustering
+      const variations = [];
+      const baseCode = leanCode;
+      
+      // Add systematic variations
+      for (let i = 0; i < 49; i++) {
+        let variant = baseCode;
+        
+        // Vary theorem types
+        if (i % 5 === 1) variant = variant.replace("theorem", "lemma");
+        if (i % 5 === 2) variant = variant.replace("theorem", "def");
+        if (i % 5 === 3) variant = variant.replace("lemma", "theorem");
+        
+        // Vary syntax patterns
+        if (i % 7 === 1) variant = variant.replace(":=", " :\n  ");
+        if (i % 7 === 2) variant = variant.replace("by", "\n  by");
+        if (i % 7 === 3) variant = variant.replace("sorry", "exact?");
+        if (i % 7 === 4) variant = variant.replace("sorry", "assumption");
+        if (i % 7 === 5) variant = variant.replace("sorry", "simp");
+        
+        // Add different comments/annotations
+        if (i % 11 === 1) variant += "\n-- Alternative approach";
+        if (i % 11 === 2) variant += "\n-- Using different tactics";
+        if (i % 11 === 3) variant += "\n-- Simplified version";
+        if (i % 11 === 4) variant += "\n-- More explicit proof";
+        if (i % 11 === 5) variant += "\n-- Direct approach";
+        
+        // Add whitespace variations
+        if (i % 13 === 1) variant = variant.replace(/\n/g, "\n  ");
+        if (i % 13 === 2) variant = variant.replace(/  /g, " ");
+        
+        // Add small semantic variations
+        if (i % 17 === 1) variant = variant.replace("(", " (");
+        if (i % 17 === 2) variant = variant.replace(")", ") ");
+        if (i % 17 === 3) variant = variant.replace(",", ", ");
+        
+        variations.push(variant + `\n-- Variation ${i}`);
+      }
+      
+      const leanCodes = [baseCode, ...variations];
 
       const frontendResult = generateFrontendVisualization(informalStatement, leanCodes);
       setPlotSvg(frontendResult.svg);
@@ -143,9 +176,10 @@ export const EmbeddingVisualization = ({ informalStatement, leanCode, isVisible 
   const floatingStyle: React.CSSProperties = hoverPos ? {
     position: 'fixed',
     left: Math.min(hoverPos.x + 16, window.innerWidth - 360),
-    top: Math.min(hoverPos.y + 16, window.innerHeight - 220),
-    zIndex: 50,
+    top: Math.max(20, Math.min(hoverPos.y - 100, window.innerHeight - 220)), // Keep away from top/bottom
+    zIndex: 9999, // Higher z-index to avoid occlusion
     maxWidth: 340,
+    pointerEvents: 'none', // Don't interfere with mouse events
   } : {};
 
   return (
@@ -190,14 +224,15 @@ export const EmbeddingVisualization = ({ informalStatement, leanCode, isVisible 
               <div ref={svgContainerRef} className="w-full flex justify-center" style={{ maxWidth: '100%' }} dangerouslySetInnerHTML={{ __html: plotSvg }} />
 
               {detachHover && hoverCode && hoverPos && (
-                <div style={floatingStyle} className="rounded-md border bg-background shadow-md p-3 text-xs leading-snug">
-                  <div className="font-semibold mb-1">Formal statement</div>
-                  <pre className="whitespace-pre-wrap break-words">{hoverCode}</pre>
+                <div style={floatingStyle} className="rounded-md border bg-background shadow-lg p-3 text-xs leading-snug">
+                  <div className="font-semibold mb-1 text-primary">Formal Statement</div>
+                  <pre className="whitespace-pre-wrap break-words text-foreground">{hoverCode}</pre>
                 </div>
               )}
             </div>
             <p className="text-xs text-muted-foreground">
-              Hover over points to see the corresponding formal Lean statement. Enable the toggle to show a floating popup that stays in-view near your cursor.
+              Hover over points to see the corresponding formal Lean statement (without proof). 
+              Enable the toggle to show a floating popup that stays in-view. Points are colored by cluster.
             </p>
           </div>
         )}

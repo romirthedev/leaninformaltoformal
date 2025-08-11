@@ -14,6 +14,31 @@ export interface Formalization {
 
 const PERPLEXITY = 30;
 
+// Extract just the statement part from Lean code (before := or by)
+function extractStatement(leanCode: string): string {
+  if (!leanCode) return "";
+  
+  // Find the statement part (before := or by)
+  const lines = leanCode.split('\n');
+  let statement = "";
+  
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (trimmed.startsWith('--')) continue; // Skip comments
+    
+    statement += line + '\n';
+    
+    // Stop at proof markers
+    if (line.includes(':=') || line.includes(' by ') || line.includes('\nby ')) {
+      // Include the line with := or by, but clean it up
+      statement = statement.replace(/\s*:=.*$/gm, '').replace(/\s*by.*$/gm, '');
+      break;
+    }
+  }
+  
+  return statement.trim() || leanCode;
+}
+
 // Simple K-means implementation
 class SimpleKMeans {
   private k: number;
@@ -419,9 +444,9 @@ export function generateFrontendVisualization(
     padding + ((y - minY) / (maxY - minY || 1)) * ((height - 2 * padding) / 2)
   ]);
 
-  // Colors for clusters
-  const colors2 = ['#1f77b4', '#ff7f0e'];
-  const colors4 = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728'];
+  // Colors for clusters - more distinct colors
+  const colors2 = ['#3b82f6', '#ef4444']; // Blue, Red
+  const colors4 = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b']; // Blue, Red, Green, Orange
 
   let svg = `<svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg" style="max-width: 100%; height: auto;">
     <style>
@@ -452,15 +477,16 @@ export function generateFrontendVisualization(
     const adjustedX = plot1X + (x / width) * plot1Width;
     const adjustedY = y + 40;
     const color = colors2[labels2Cluster[i]] || colors2[0];
-    const codeTitle = escapeHtml(formalizations[i].lean_code);
+    const statementOnly = extractStatement(formalizations[i].lean_code);
+    const codeTitle = escapeHtml(statementOnly);
 
-    // Build popup content
-    const popupLines = foldTitle(formalizations[i].lean_code, 40).split('\n').map(escapeHtml);
+    // Build popup content - just the statement
+    const popupLines = foldTitle(statementOnly, 40).split('\n').map(escapeHtml);
     const lineHeight = 12;
     const paddingBox = 8;
     const popupWidth = Math.min(280, Math.max(160, Math.max(...popupLines.map(l => l.length)) * 6 + paddingBox * 2));
     const popupHeight = popupLines.length * lineHeight + paddingBox * 2;
-    const leanAttr = encodeURIComponent(formalizations[i].lean_code);
+    const leanAttr = encodeURIComponent(statementOnly);
 
     // Dynamic positioning within left plot
     const localX = adjustedX - plot1X;
@@ -520,15 +546,16 @@ export function generateFrontendVisualization(
     const adjustedX = plot2X + (x / width) * plot2Width;
     const adjustedY = y + 40;
     const color = colors4[labels4Cluster[i]] || colors4[0];
-    const codeTitle = escapeHtml(formalizations[i].lean_code);
+    const statementOnly = extractStatement(formalizations[i].lean_code);
+    const codeTitle = escapeHtml(statementOnly);
 
-    // Build popup content
-    const popupLines = foldTitle(formalizations[i].lean_code, 40).split('\n').map(escapeHtml);
+    // Build popup content - just the statement
+    const popupLines = foldTitle(statementOnly, 40).split('\n').map(escapeHtml);
     const lineHeight = 12;
     const paddingBox = 8;
     const popupWidth = Math.min(280, Math.max(160, Math.max(...popupLines.map(l => l.length)) * 6 + paddingBox * 2));
     const popupHeight = popupLines.length * lineHeight + paddingBox * 2;
-    const leanAttr = encodeURIComponent(formalizations[i].lean_code);
+    const leanAttr = encodeURIComponent(statementOnly);
 
     // Dynamic positioning within right plot
     const localX = adjustedX - plot2X;
@@ -582,6 +609,6 @@ export function generateFrontendVisualization(
 
   return {
     svg,
-    message: `Generated t-SNE visualization with K-means clustering (2 and 4 clusters) for ${leanCodes.length} formalizations`
+    message: `Generated t-SNE visualization with K-means clustering (2 and 4 clusters) for ${leanCodes.length} formalizations. Points are colored by cluster membership.`
   };
 }
