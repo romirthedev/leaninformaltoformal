@@ -14,29 +14,40 @@ export interface Formalization {
 
 const PERPLEXITY = 30;
 
+// Standardize Lean code to: theorem (h1 : ...) (...) : conclusion
+function standardizeLeanCode(code: string): string {
+  // Try to extract the main statement
+  // Example: theorem add_comm (a b : Nat) : a + b = b + a :=
+  // Output: theorem (a b : Nat) : a + b = b + a
+  const theoremMatch = code.match(/theorem\s+(\w+)\s*\(([^)]*)\)\s*:\s*([^:=]*)/);
+  if (theoremMatch) {
+    const params = theoremMatch[2].trim();
+    const conclusion = theoremMatch[3].replace(/\s*:=.*$/, '').trim();
+    return `theorem (${params}) : ${conclusion}`;
+  }
+  // Try lemma
+  const lemmaMatch = code.match(/lemma\s+(\w+)\s*\(([^)]*)\)\s*:\s*([^:=]*)/);
+  if (lemmaMatch) {
+    const params = lemmaMatch[2].trim();
+    const conclusion = lemmaMatch[3].replace(/\s*:=.*$/, '').trim();
+    return `theorem (${params}) : ${conclusion}`;
+  }
+  // Try def
+  const defMatch = code.match(/def\s+(\w+)\s*\(([^)]*)\)\s*:\s*([^:=]*)/);
+  if (defMatch) {
+    const params = defMatch[2].trim();
+    const conclusion = defMatch[3].replace(/\s*:=.*$/, '').trim();
+    return `theorem (${params}) : ${conclusion}`;
+  }
+  // Fallback: just return code
+  return code.trim();
+}
+
 // Extract just the statement part from Lean code (before := or by)
 function extractStatement(leanCode: string): string {
   if (!leanCode) return "";
-  
-  // Find the statement part (before := or by)
-  const lines = leanCode.split('\n');
-  let statement = "";
-  
-  for (const line of lines) {
-    const trimmed = line.trim();
-    if (trimmed.startsWith('--')) continue; // Skip comments
-    
-    statement += line + '\n';
-    
-    // Stop at proof markers
-    if (line.includes(':=') || line.includes(' by ') || line.includes('\nby ')) {
-      // Include the line with := or by, but clean it up
-      statement = statement.replace(/\s*:=.*$/gm, '').replace(/\s*by.*$/gm, '');
-      break;
-    }
-  }
-  
-  return statement.trim() || leanCode;
+  // Use standardized format
+  return standardizeLeanCode(leanCode);
 }
 
 // Simple K-means implementation
