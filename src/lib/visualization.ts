@@ -13,6 +13,50 @@ export interface Formalization {
 }
 
 const PERPLEXITY = 30;
+const GEMINI_API_KEY = "AIzaSyDJzAJF422SyZ99Z6CGihnJqKIDlQn4CfM";
+
+// Get real embeddings from Google's text embedding API
+async function generateRealEmbeddings(leanCodes: string[]): Promise<number[][]> {
+  try {
+    const embeddings = await Promise.all(
+      leanCodes.map(async (code) => {
+        const response = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key=${GEMINI_API_KEY}`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              model: 'models/text-embedding-004',
+              content: {
+                parts: [{ text: code }]
+              }
+            })
+          }
+        );
+        
+        if (!response.ok) {
+          throw new Error(`Embedding API error: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        return data.embedding?.values || [];
+      })
+    );
+    
+    // Validate embeddings
+    const validEmbeddings = embeddings.filter(emb => emb.length > 0);
+    if (validEmbeddings.length === 0) {
+      throw new Error('No valid embeddings received');
+    }
+    
+    return validEmbeddings;
+  } catch (error) {
+    console.warn('Failed to get real embeddings, falling back to fake ones:', error);
+    return generateFakeEmbeddings(leanCodes);
+  }
+}
 
 // Standardize Lean code to: theorem (h1 : ...) (...) : conclusion
 function standardizeLeanCode(code: string): string {
@@ -68,16 +112,31 @@ class SimpleKMeans {
     const n = data.length;
     const dims = data[0].length;
 
-    // Initialize centroids randomly
+    // Initialize centroids with better separation using k-means++
     this.centroids = [];
-    for (let i = 0; i < this.k; i++) {
-      const centroid = [];
-      for (let j = 0; j < dims; j++) {
-        // Initialize with random data point values
-        const randomIdx = Math.floor(Math.random() * n);
-        centroid.push(data[randomIdx][j] + (Math.random() - 0.5) * 0.1);
+    
+    // Choose first centroid randomly
+    const firstIdx = Math.floor(Math.random() * n);
+    this.centroids.push([...data[firstIdx]]);
+    
+    // Choose remaining centroids using k-means++ (farther from existing centroids)
+    for (let i = 1; i < this.k; i++) {
+      let maxDistance = -1;
+      let farthestIdx = 0;
+      
+      for (let j = 0; j < n; j++) {
+        let minDistToCentroid = Infinity;
+        for (const centroid of this.centroids) {
+          const dist = this.euclideanDistance(data[j], centroid);
+          minDistToCentroid = Math.min(minDistToCentroid, dist);
+        }
+        if (minDistToCentroid > maxDistance) {
+          maxDistance = minDistToCentroid;
+          farthestIdx = j;
+        }
       }
-      this.centroids.push(centroid);
+      
+      this.centroids.push([...data[farthestIdx]]);
     }
 
     // K-means iterations
@@ -250,8 +309,8 @@ class SimpleTSNE {
   }
 }
 
-// Generate simple embeddings for Lean code (mimicking sentence transformers)
-function generateEmbeddings(leanCodes: string[]): number[][] {
+// Generate simple embeddings for Lean code (mimicking sentence transformers) - FALLBACK
+function generateFakeEmbeddings(leanCodes: string[]): number[][] {
   const embeddingDim = 384; // Typical sentence transformer dimension
   
   return leanCodes.map((code, codeIndex) => {
@@ -378,8 +437,8 @@ function extractEmbeddings(formalizations: Formalization[]): number[][] {
 }
 
 // Create formalizations with embeddings
-function createFormalizationsWithEmbeddings(informalStatement: string, leanCodes: string[]): Formalization[] {
-  const embeddings = generateEmbeddings(leanCodes);
+async function createFormalizationsWithEmbeddings(informalStatement: string, leanCodes: string[]): Promise<Formalization[]> {
+  const embeddings = await generateRealEmbeddings(leanCodes);
   
   return leanCodes.map((leanCode, i) => ({
     lean_code: leanCode,
@@ -403,10 +462,10 @@ function escapeHtml(text: string): string {
 }
 
 // Main visualization function that replicates the Python implementation
-export function generateFrontendVisualization(
+export async function generateFrontendVisualization(
   informalStatement: string,
   leanCodes: string[]
-): VisualizationData {
+): Promise<VisualizationData> {
   const width = 700;
   const height = 400;
   const padding = 50;
@@ -437,7 +496,7 @@ export function generateFrontendVisualization(
   }
 
   // Create formalizations with embeddings
-  const formalizations = createFormalizationsWithEmbeddings(informalStatement, leanCodes);
+  const formalizations = await createFormalizationsWithEmbeddings(informalStatement, leanCodes);
   const embeddings = extractEmbeddings(formalizations);
 
   // 2-cluster analysis using SimpleKMeans

@@ -185,7 +185,8 @@ export const EmbeddingVisualization = ({ informalStatement, leanCode, isVisible 
       
       const leanCodes = [baseCode, ...variations];
 
-      const frontendResult = generateFrontendVisualization(informalStatement, leanCodes);
+      // Generate frontend visualization with real embeddings
+      const frontendResult = await generateFrontendVisualization(informalStatement, leanCodes);
       setPlotSvg(frontendResult.svg);
       toast({ title: "Visualization Generated! 📊", description: frontendResult.message });
     } catch (error) {
