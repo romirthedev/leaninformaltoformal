@@ -1,18 +1,18 @@
 # Lean - Informal to Formal Converter
 
-Transform your informal mathematical statements into formal Lean 4 proofs with the power of AI, complete with embedding visualizations.
+Transform your informal mathematical statements into formal Lean 4 proofs with the power of AI, complete with interactive embedding visualizations.
 
 ## Features
 
 - **AI-Powered Conversion**: Convert informal mathematical statements to formal Lean 4 proofs using Google Gemini AI
 - **Copy to Clipboard**: Easily copy generated proofs with one click
-- **Embedding Visualizations**: Generate visual representations of how different formalizations relate in semantic space
+- **Interactive Embedding Visualizations**: Generate visual representations of how different formalizations relate in semantic space with hover/click interactions
+- **Real Semantic Embeddings**: Uses Google Gemini API (text-embedding-004) for meaningful clustering
+- **Frontend-Only**: No backend required - everything runs in your browser
 - **Responsive Design**: Works seamlessly on desktop and mobile devices
 - **Clean Interface**: Modern, intuitive UI built with React and shadcn/ui
 
 ## Getting Started
-
-### Frontend
 
 1. Install dependencies:
    ```bash
@@ -26,22 +26,6 @@ Transform your informal mathematical statements into formal Lean 4 proofs with t
 
 3. Open [http://localhost:8080](http://localhost:8080) in your browser
 
-### Backend (for visualizations)
-
-1. Set up the Python backend:
-   ```bash
-   cd backend
-   ./setup.sh
-   ```
-
-2. Start the backend server:
-   ```bash
-   source venv/bin/activate
-   python app.py
-   ```
-
-The backend will run on [http://localhost:5000](http://localhost:5000)
-
 ## Usage
 
 1. **Basic Conversion**:
@@ -49,17 +33,18 @@ The backend will run on [http://localhost:5000](http://localhost:5000)
    - Click "Convert to Lean Proof" 
    - Copy the generated formal proof using the copy button
 
-2. **Embedding Visualizations**:
-   - After generating a proof, click "Generate Embedding Plot"
-   - View clustering analysis showing how different formalizations relate
-   - Explore 2-cluster and 4-cluster visualizations
+2. **Interactive Embedding Visualizations**:
+   - Click "Generate Embedding Plot" to visualize mathematical theorem relationships
+   - Hover over points to see formal statements
+   - Click points to copy statements to clipboard
+   - View both 2-cluster and 4-cluster analyses side-by-side
+   - Toggle hover/click features as needed
 
 ## Architecture
 
-- **Frontend**: React + TypeScript + Vite + shadcn/ui
-- **Backend**: Python Flask API with ML libraries
-- **AI Integration**: Google Gemini API for proof generation
-- **Visualization**: matplotlib + scikit-learn + sentence-transformers
+- **Frontend**: React + TypeScript + Vite + shadcn/ui (frontend-only, no backend)
+- **AI Integration**: Google Gemini API for proof generation and semantic embeddings
+- **Visualization**: Custom t-SNE and K-means clustering implemented in TypeScript with SVG rendering
 
 ## Project info
 
