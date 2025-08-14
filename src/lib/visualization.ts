@@ -254,33 +254,46 @@ class SimpleTSNE {
 function generateEmbeddings(leanCodes: string[]): number[][] {
   const embeddingDim = 384; // Typical sentence transformer dimension
   
-  return leanCodes.map(code => {
+  return leanCodes.map((code, codeIndex) => {
     const embedding = new Array(embeddingDim).fill(0);
     
     // Simple feature extraction based on code characteristics
-    const codeHash = simpleHash(code);
+    const codeHash = simpleHash(code + codeIndex.toString()); // Add index for uniqueness
     const words = code.toLowerCase().split(/\s+/);
     
     for (let i = 0; i < embeddingDim; i++) {
       let value = 0;
       
-      // Add features based on code structure
-      if (code.includes('theorem')) value += 0.5;
-      if (code.includes('lemma')) value += 0.3;
-      if (code.includes('def')) value += 0.4;
+      // Add features based on code structure with more variation
+      if (code.includes('theorem')) value += 0.5 + (codeIndex * 0.01);
+      if (code.includes('lemma')) value += 0.3 + (codeIndex * 0.01);
+      if (code.includes('def')) value += 0.4 + (codeIndex * 0.01);
       if (code.includes('by')) value += 0.2;
       if (code.includes('sorry')) value -= 0.3;
       if (code.includes(':=')) value += 0.1;
       
-      // Add word-based features
-      words.forEach(word => {
-        const wordHash = simpleHash(word + i.toString());
+      // Add more distinctive features based on content
+      if (code.includes('Nat')) value += 0.6 + Math.sin(codeIndex * 0.1);
+      if (code.includes('List')) value += 0.7 + Math.cos(codeIndex * 0.1);
+      if (code.includes('Set')) value += 0.8 + Math.sin(codeIndex * 0.2);
+      if (code.includes('Prop')) value += 0.9 + Math.cos(codeIndex * 0.2);
+      if (code.includes('comm')) value += 1.0 + Math.sin(codeIndex * 0.3);
+      if (code.includes('assoc')) value += 1.1 + Math.cos(codeIndex * 0.3);
+      if (code.includes('add')) value += 1.2 + Math.sin(codeIndex * 0.4);
+      if (code.includes('mul')) value += 1.3 + Math.cos(codeIndex * 0.4);
+      if (code.includes('zero')) value += 1.4 + Math.sin(codeIndex * 0.5);
+      if (code.includes('one')) value += 1.5 + Math.cos(codeIndex * 0.5);
+      
+      // Add word-based features with more variation
+      words.forEach((word, wordIndex) => {
+        const wordHash = simpleHash(word + i.toString() + wordIndex.toString());
         value += (wordHash % 100) / 1000;
+        value += Math.sin(wordIndex * 0.1 + codeIndex * 0.05) * 0.2;
       });
       
-      // Add position-based variation
-      value += Math.sin(i * 0.1 + codeHash * 0.01) * 0.1;
-      value += Math.cos(i * 0.05 + code.length * 0.02) * 0.1;
+      // Add position-based variation with code index
+      value += Math.sin(i * 0.1 + codeHash * 0.01 + codeIndex * 0.1) * 0.3;
+      value += Math.cos(i * 0.05 + code.length * 0.02 + codeIndex * 0.1) * 0.3;
       
       embedding[i] = value;
     }

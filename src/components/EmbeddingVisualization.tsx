@@ -117,43 +117,70 @@ export const EmbeddingVisualization = ({ informalStatement, leanCode, isVisible 
     setPlotSvg("");
 
     try {
-      // Generate 50 variations for richer clustering
+      // Generate 50 meaningful variations for richer clustering
       const variations = [];
       const baseCode = leanCode;
       
-      // Add systematic variations
+      // Create truly different variations with different mathematical content
+      const mathConcepts = [
+        { name: "comm_add", params: "a b : Nat", conclusion: "a + b = b + a" },
+        { name: "assoc_add", params: "a b c : Nat", conclusion: "(a + b) + c = a + (b + c)" },
+        { name: "zero_add", params: "a : Nat", conclusion: "0 + a = a" },
+        { name: "add_zero", params: "a : Nat", conclusion: "a + 0 = a" },
+        { name: "comm_mul", params: "a b : Nat", conclusion: "a * b = b * a" },
+        { name: "assoc_mul", params: "a b c : Nat", conclusion: "(a * b) * c = a * (b * c)" },
+        { name: "one_mul", params: "a : Nat", conclusion: "1 * a = a" },
+        { name: "mul_one", params: "a : Nat", conclusion: "a * 1 = a" },
+        { name: "distrib", params: "a b c : Nat", conclusion: "a * (b + c) = a * b + a * c" },
+        { name: "le_refl", params: "a : Nat", conclusion: "a ≤ a" },
+        { name: "le_trans", params: "a b c : Nat", conclusion: "a ≤ b → b ≤ c → a ≤ c" },
+        { name: "le_antisymm", params: "a b : Nat", conclusion: "a ≤ b → b ≤ a → a = b" },
+        { name: "succ_pos", params: "n : Nat", conclusion: "0 < n.succ" },
+        { name: "lt_succ", params: "n : Nat", conclusion: "n < n.succ" },
+        { name: "eq_refl", params: "a : α", conclusion: "a = a" },
+        { name: "eq_symm", params: "a b : α", conclusion: "a = b → b = a" },
+        { name: "eq_trans", params: "a b c : α", conclusion: "a = b → b = c → a = c" },
+        { name: "not_not", params: "p : Prop", conclusion: "¬¬p ↔ p" },
+        { name: "and_comm", params: "p q : Prop", conclusion: "p ∧ q ↔ q ∧ p" },
+        { name: "or_comm", params: "p q : Prop", conclusion: "p ∨ q ↔ q ∨ p" },
+        { name: "and_assoc", params: "p q r : Prop", conclusion: "(p ∧ q) ∧ r ↔ p ∧ (q ∧ r)" },
+        { name: "or_assoc", params: "p q r : Prop", conclusion: "(p ∨ q) ∨ r ↔ p ∨ (q ∨ r)" },
+        { name: "length_nil", params: "α : Type", conclusion: "[].length = 0" },
+        { name: "length_cons", params: "a : α, l : List α", conclusion: "(a :: l).length = l.length + 1" },
+        { name: "append_nil", params: "l : List α", conclusion: "l ++ [] = l" },
+        { name: "nil_append", params: "l : List α", conclusion: "[] ++ l = l" },
+        { name: "append_assoc", params: "l₁ l₂ l₃ : List α", conclusion: "(l₁ ++ l₂) ++ l₃ = l₁ ++ (l₂ ++ l₃)" },
+        { name: "map_nil", params: "f : α → β", conclusion: "List.map f [] = []" },
+        { name: "map_cons", params: "f : α → β, a : α, l : List α", conclusion: "List.map f (a :: l) = f a :: List.map f l" },
+        { name: "reverse_reverse", params: "l : List α", conclusion: "l.reverse.reverse = l" },
+        { name: "mem_cons", params: "a b : α, l : List α", conclusion: "a ∈ (b :: l) ↔ a = b ∨ a ∈ l" },
+        { name: "subset_refl", params: "s : Set α", conclusion: "s ⊆ s" },
+        { name: "subset_trans", params: "s t u : Set α", conclusion: "s ⊆ t → t ⊆ u → s ⊆ u" },
+        { name: "union_comm", params: "s t : Set α", conclusion: "s ∪ t = t ∪ s" },
+        { name: "inter_comm", params: "s t : Set α", conclusion: "s ∩ t = t ∩ s" },
+        { name: "union_assoc", params: "s t u : Set α", conclusion: "(s ∪ t) ∪ u = s ∪ (t ∪ u)" },
+        { name: "inter_assoc", params: "s t u : Set α", conclusion: "(s ∩ t) ∩ u = s ∩ (t ∩ u)" },
+        { name: "union_empty", params: "s : Set α", conclusion: "s ∪ ∅ = s" },
+        { name: "inter_empty", params: "s : Set α", conclusion: "s ∩ ∅ = ∅" },
+        { name: "union_univ", params: "s : Set α", conclusion: "s ∪ Set.univ = Set.univ" },
+        { name: "inter_univ", params: "s : Set α", conclusion: "s ∩ Set.univ = s" },
+        { name: "even_zero", params: "", conclusion: "Even 0" },
+        { name: "odd_one", params: "", conclusion: "Odd 1" },
+        { name: "even_add", params: "m n : Nat", conclusion: "Even m → Even n → Even (m + n)" },
+        { name: "odd_add", params: "m n : Nat", conclusion: "Odd m → Odd n → Even (m + n)" },
+        { name: "prime_two", params: "", conclusion: "Nat.Prime 2" },
+        { name: "dvd_refl", params: "a : Nat", conclusion: "a ∣ a" },
+        { name: "dvd_trans", params: "a b c : Nat", conclusion: "a ∣ b → b ∣ c → a ∣ c" },
+        { name: "dvd_add", params: "a b c : Nat", conclusion: "a ∣ b → a ∣ c → a ∣ (b + c)" },
+        { name: "gcd_comm", params: "a b : Nat", conclusion: "Nat.gcd a b = Nat.gcd b a" },
+        { name: "lcm_comm", params: "a b : Nat", conclusion: "Nat.lcm a b = Nat.lcm b a" }
+      ];
+      
+      // Use different concepts for variations (cycling through them)
       for (let i = 0; i < 49; i++) {
-        let variant = baseCode;
-        
-        // Vary theorem types
-        if (i % 5 === 1) variant = variant.replace("theorem", "lemma");
-        if (i % 5 === 2) variant = variant.replace("theorem", "def");
-        if (i % 5 === 3) variant = variant.replace("lemma", "theorem");
-        
-        // Vary syntax patterns
-        if (i % 7 === 1) variant = variant.replace(":=", " :\n  ");
-        if (i % 7 === 2) variant = variant.replace("by", "\n  by");
-        if (i % 7 === 3) variant = variant.replace("sorry", "exact?");
-        if (i % 7 === 4) variant = variant.replace("sorry", "assumption");
-        if (i % 7 === 5) variant = variant.replace("sorry", "simp");
-        
-        // Add different comments/annotations
-        if (i % 11 === 1) variant += "\n-- Alternative approach";
-        if (i % 11 === 2) variant += "\n-- Using different tactics";
-        if (i % 11 === 3) variant += "\n-- Simplified version";
-        if (i % 11 === 4) variant += "\n-- More explicit proof";
-        if (i % 11 === 5) variant += "\n-- Direct approach";
-        
-        // Add whitespace variations
-        if (i % 13 === 1) variant = variant.replace(/\n/g, "\n  ");
-        if (i % 13 === 2) variant = variant.replace(/  /g, " ");
-        
-        // Add small semantic variations
-        if (i % 17 === 1) variant = variant.replace("(", " (");
-        if (i % 17 === 2) variant = variant.replace(")", ") ");
-        if (i % 17 === 3) variant = variant.replace(",", ", ");
-        
-        variations.push(variant + `\n-- Variation ${i}`);
+        const concept = mathConcepts[i % mathConcepts.length];
+        const variant = `theorem ${concept.name} (${concept.params}) : ${concept.conclusion}`;
+        variations.push(variant);
       }
       
       const leanCodes = [baseCode, ...variations];
